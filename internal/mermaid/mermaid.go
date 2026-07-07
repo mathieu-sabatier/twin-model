@@ -24,7 +24,7 @@ func TypesDiagram(m *dsl.Model) string {
 			if typ == "" {
 				typ = string(mem.Kind) // methods have no type
 			}
-			fmt.Fprintf(&b, "    +%s %s\n", sanitizeLabel(typ), sanitizeLabel(mem.Name))
+			fmt.Fprintf(&b, "    +%s %s\n", classMemberToken(typ), classMemberToken(mem.Name))
 		}
 		b.WriteString("  }\n")
 	}
@@ -100,4 +100,13 @@ func sanitizeLabel(s string) string {
 	s = strings.ReplaceAll(s, "\"", "'")
 	s = strings.ReplaceAll(s, "\n", " ")
 	return s
+}
+
+// classMemberToken renders a token on an (unquoted) classDiagram member line.
+// A colon in a companion-spec-qualified type — e.g. "Machinery:MachineIdentificationType"
+// or "OpcUa:FolderType" — makes Mermaid's classDiagram parser treat the line as a
+// label separator and silently fail to render the whole diagram, so the alias
+// separator is shown as a dot. (Flowchart labels keep the colon: they are quoted.)
+func classMemberToken(s string) string {
+	return strings.ReplaceAll(sanitizeLabel(s), ":", ".")
 }

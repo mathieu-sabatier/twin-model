@@ -7,6 +7,8 @@
 **Author OPC UA information models as small, reviewable YAML — then transpile,
 lint, diagram, and open a pull request, from a CLI or a git-backed web editor.**
 
+![The twinmodel web editor: an ISA-95 equipment tree, a nine-member FurnaceType built on OPC UA companion specs, its live class diagram, and the YAML source](.github/assets/screenshot.png)
+
 twinmodel turns a compact YAML DSL into **ModelDesign.xml**, the input format of
 the official OPC Foundation
 [UA-ModelCompiler](https://github.com/OPCFoundation/UA-ModelCompiler), which
@@ -105,8 +107,6 @@ repository** (no database). Point it at a repo and open the browser:
 GIT_REPO=https://github.com/you/your-model.git GIT_TOKEN=<pat> twinmodel serve
 # open http://localhost:8080
 ```
-
-<!-- Add a screenshot here once captured: ![twinmodel web UI](docs/screenshot.png) -->
 
 - **Browse & edit** any model file on a branch, with live diagnostics as you type.
 - **Catalog palette** — pull in companion-spec types (DI, Machinery, ISA-95) resolved from the embedded catalog.
