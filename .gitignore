@@ -1,0 +1,24 @@
+# Compiled binary
+build
+
+# Build output (generated ModelDesign XML + ModelCompiler artifacts)
+/out/
+
+# Go test / coverage
+*.test
+*.out
+coverage.*
+
+# Editor / OS
+.DS_Store
+.idea/
+*.swp
+
+# Local Go workspace file (developer-local, not committed)
+go.work
+go.work.sum
+
+# GenAI
+.claude
+.gstack/
+docs

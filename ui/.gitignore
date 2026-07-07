@@ -1,0 +1,12 @@
+# Nuxt / Node build + dependency artifacts — never committed.
+node_modules
+.nuxt
+.output
+.data
+dist
+.env
+.env.*
+*.log
+.DS_Store
+.vitest
+coverage

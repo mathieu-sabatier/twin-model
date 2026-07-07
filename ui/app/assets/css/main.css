@@ -1,0 +1,16 @@
+@import "tailwindcss";
+@import "@nuxt/ui";
+
+/*
+ * Self-hosted / system font stack ONLY.
+ *
+ * No @nuxt/fonts, no Google Fonts CDN. This overrides Tailwind v4's default
+ * --font-sans with an explicit system stack so zero font files are fetched at
+ * runtime (required by the strict CSP the built bundle is served behind).
+ */
+@theme {
+  --font-sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    "Liberation Mono", "Courier New", monospace;
+}

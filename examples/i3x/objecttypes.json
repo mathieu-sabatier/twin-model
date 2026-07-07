@@ -1,0 +1,252 @@
+[
+  {
+    "elementId": "nsu=https://acme.example/UA/Equipment/;s=EquipmentType",
+    "displayName": "EquipmentType",
+    "namespaceUri": "https://acme.example/UA/Equipment/",
+    "sourceTypeId": "nsu=http://opcfoundation.org/UA/;s=BaseObjectType",
+    "version": "1.0.0",
+    "schema": {
+      "$id": "nsu=https://acme.example/UA/Equipment/;s=EquipmentType",
+      "type": "object",
+      "title": "EquipmentType",
+      "description": "Abstract base for all plant equipment",
+      "x-opcua": {
+        "abstract": true
+      },
+      "properties": {
+        "Manufacturer": {
+          "type": "string",
+          "readOnly": true,
+          "x-opcua": {
+            "nodeClass": "Property"
+          }
+        },
+        "SerialNumber": {
+          "type": "string",
+          "readOnly": true,
+          "x-opcua": {
+            "nodeClass": "Property"
+          }
+        },
+        "State": {
+          "$ref": "#/$defs/EquipmentState",
+          "readOnly": true
+        },
+        "CycleCount": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "readOnly": true
+        }
+      },
+      "required": [
+        "Manufacturer",
+        "SerialNumber",
+        "State"
+      ],
+      "$defs": {
+        "EquipmentState": {
+          "type": "integer",
+          "enum": [
+            0,
+            1,
+            2,
+            3,
+            4
+          ],
+          "x-enumNames": [
+            "Idle",
+            "Running",
+            "Paused",
+            "Fault",
+            "Maintenance"
+          ],
+          "description": "Operational state common to all equipment"
+        }
+      }
+    }
+  },
+  {
+    "elementId": "nsu=https://acme.example/UA/Equipment/;s=HeatingZoneType",
+    "displayName": "HeatingZoneType",
+    "namespaceUri": "https://acme.example/UA/Equipment/",
+    "sourceTypeId": "nsu=http://opcfoundation.org/UA/;s=BaseObjectType",
+    "version": "1.0.0",
+    "schema": {
+      "$id": "nsu=https://acme.example/UA/Equipment/;s=HeatingZoneType",
+      "type": "object",
+      "title": "HeatingZoneType",
+      "description": "One controllable heating zone inside a furnace",
+      "properties": {
+        "Temperature": {
+          "type": "number",
+          "readOnly": true,
+          "engineeringUnits": {
+            "unitId": 4408652,
+            "displayName": "°C",
+            "namespaceUri": "http://www.opcfoundation.org/UA/units/un/cefact"
+          }
+        },
+        "PowerLevel": {
+          "type": "number",
+          "readOnly": true,
+          "engineeringUnits": {
+            "unitId": 20529,
+            "displayName": "%",
+            "namespaceUri": "http://www.opcfoundation.org/UA/units/un/cefact"
+          }
+        },
+        "Setpoint": {
+          "type": "number",
+          "readOnly": false,
+          "engineeringUnits": {
+            "unitId": 4408652,
+            "displayName": "°C",
+            "namespaceUri": "http://www.opcfoundation.org/UA/units/un/cefact"
+          }
+        }
+      },
+      "required": [
+        "Temperature",
+        "PowerLevel",
+        "Setpoint"
+      ]
+    }
+  },
+  {
+    "elementId": "nsu=https://acme.example/UA/Equipment/;s=FurnaceType",
+    "displayName": "FurnaceType",
+    "namespaceUri": "https://acme.example/UA/Equipment/",
+    "sourceTypeId": "nsu=https://acme.example/UA/Equipment/;s=EquipmentType",
+    "version": "1.0.0",
+    "schema": {
+      "$id": "nsu=https://acme.example/UA/Equipment/;s=FurnaceType",
+      "type": "object",
+      "title": "FurnaceType",
+      "description": "Batch heat-treatment furnace",
+      "properties": {
+        "DoorClosed": {
+          "type": "boolean",
+          "readOnly": true
+        },
+        "Zones": {
+          "x-opcua": {
+            "nodeClass": "Object",
+            "typeDefinition": "nsu=http://opcfoundation.org/UA/;s=FolderType",
+            "composition": true
+          },
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "nsu=https://acme.example/UA/Equipment/;s=HeatingZoneType"
+          },
+          "x-opcua-placeholder": {
+            "symbolicName": "Zone",
+            "browseNamePattern": "<ZoneNo>",
+            "rule": "OptionalPlaceholder"
+          }
+        }
+      },
+      "required": [
+        "DoorClosed"
+      ],
+      "x-opcuaMethods": [
+        {
+          "name": "StartProgram",
+          "description": "Start a named heating program",
+          "in": [
+            {
+              "name": "ProgramId",
+              "type": "String"
+            }
+          ],
+          "out": [
+            {
+              "name": "Accepted",
+              "type": "Boolean"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "elementId": "nsu=https://acme.example/UA/Equipment/;s=PressType",
+    "displayName": "PressType",
+    "namespaceUri": "https://acme.example/UA/Equipment/",
+    "sourceTypeId": "nsu=https://acme.example/UA/Equipment/;s=EquipmentType",
+    "version": "1.0.0",
+    "schema": {
+      "$id": "nsu=https://acme.example/UA/Equipment/;s=PressType",
+      "type": "object",
+      "title": "PressType",
+      "description": "Hydraulic forming press",
+      "properties": {
+        "Force": {
+          "type": "number",
+          "readOnly": true,
+          "engineeringUnits": {
+            "unitId": 4338743,
+            "displayName": "kN",
+            "namespaceUri": "http://www.opcfoundation.org/UA/units/un/cefact"
+          }
+        },
+        "RamPosition": {
+          "type": "number",
+          "readOnly": true,
+          "engineeringUnits": {
+            "unitId": 5066068,
+            "displayName": "mm",
+            "namespaceUri": "http://www.opcfoundation.org/UA/units/un/cefact"
+          }
+        },
+        "MaxForce": {
+          "type": "number",
+          "readOnly": true,
+          "engineeringUnits": {
+            "unitId": 4338743,
+            "displayName": "kN",
+            "namespaceUri": "http://www.opcfoundation.org/UA/units/un/cefact"
+          }
+        }
+      },
+      "required": [
+        "Force",
+        "RamPosition",
+        "MaxForce"
+      ],
+      "x-opcuaMethods": [
+        {
+          "name": "EmergencyStop"
+        }
+      ]
+    }
+  },
+  {
+    "elementId": "nsu=http://opcfoundation.org/UA/;s=BaseObjectType",
+    "displayName": "BaseObjectType",
+    "namespaceUri": "http://opcfoundation.org/UA/",
+    "schema": {
+      "$id": "nsu=http://opcfoundation.org/UA/;s=BaseObjectType",
+      "type": "object",
+      "title": "BaseObjectType",
+      "x-opcua": {
+        "stub": true
+      }
+    }
+  },
+  {
+    "elementId": "nsu=http://opcfoundation.org/UA/;s=FolderType",
+    "displayName": "FolderType",
+    "namespaceUri": "http://opcfoundation.org/UA/",
+    "sourceTypeId": "nsu=http://opcfoundation.org/UA/;s=BaseObjectType",
+    "schema": {
+      "$id": "nsu=http://opcfoundation.org/UA/;s=FolderType",
+      "type": "object",
+      "title": "FolderType",
+      "x-opcua": {
+        "stub": true
+      }
+    }
+  }
+]

@@ -1,0 +1,20 @@
+model:
+  name: AcmePump
+  namespace: https://acme.example/UA/Pump/
+  prefix: Acme.Pump
+  version: 1.0.0
+  publication_date: 2026-07-04
+
+imports:
+  OpcUa: http://opcfoundation.org/UA/
+  DI: http://opcfoundation.org/UA/DI/
+
+object_types:
+  PumpType:
+    doc: A pump, specialized from the DI DeviceType
+    base: DI:DeviceType
+    members:
+      FlowRate: { type: Double }
+
+instances:
+  Pump01: { type: PumpType, under: OpcUa:ObjectsFolder }

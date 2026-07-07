@@ -1,0 +1,14 @@
+{
+  // Nuxt 4 generates per-context tsconfigs (app, server, node, shared) under
+  // .nuxt/ and wires them via project references. This root config just points
+  // the editor/typechecker at them. Strict mode is enabled in nuxt.config.ts
+  // (typescript.strict) and flows into the generated configs.
+  "extends": "./.nuxt/tsconfig.json",
+  "files": [],
+  "references": [
+    { "path": "./.nuxt/tsconfig.app.json" },
+    { "path": "./.nuxt/tsconfig.server.json" },
+    { "path": "./.nuxt/tsconfig.node.json" },
+    { "path": "./.nuxt/tsconfig.shared.json" }
+  ]
+}

@@ -1,0 +1,10 @@
+flowchart TD
+  Furnace01["Furnace01: FurnaceType"]
+  Press01["Press01: PressType"]
+  Furnace02["Furnace02: FurnaceType"]
+  ObjectsFolder["ObjectsFolder"]
+  ObjectsFolder --> Furnace01
+  ObjectsFolder --> Press01
+  ObjectsFolder --> Furnace02
+  Furnace02 --> Furnace02_Zone1["Zone1: Zone<No>"]
+  Furnace02 --> Furnace02_Zone2["Zone2: Zone<No>"]

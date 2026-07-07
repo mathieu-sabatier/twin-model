@@ -1,0 +1,36 @@
+model:
+  name: PlantHierarchy
+  namespace: https://example.com/UA/plant/
+  version: 1.0.0
+  publication_date: 2026-07-06
+
+imports:
+  OpcUa: http://opcfoundation.org/UA/
+  DI: http://opcfoundation.org/UA/DI/
+  Machinery: http://opcfoundation.org/UA/Machinery/
+  ISA95: http://www.OPCFoundation.org/UA/2013/01/ISA95
+
+object_types:
+  FillerType:
+    doc: Machinery-style equipment leaf (DI device + Machinery blocks).
+    base: DI:DeviceType
+    members:
+      Identification: { kind: object, type: Machinery:MachineIdentificationType }
+
+instances:
+  Acme:       { type: ISA95:EquipmentType, level: Enterprise, under: OpcUa:ObjectsFolder }
+  PlantBerlin: { type: ISA95:EquipmentType, level: Site,       under: Acme }
+  Packaging:  { type: ISA95:EquipmentType, level: Area,        under: PlantBerlin }
+  Line1:      { type: ISA95:EquipmentType, level: WorkCenter,  under: Packaging }
+  Cell1:      { type: ISA95:EquipmentType, level: WorkUnit,    under: Line1 }
+  Filler1:    { type: FillerType, under: Cell1 }
+
+perspectives:
+  fire_zones:
+    label: "Fire zones"
+    membership: exclusive
+    export: true
+    nodes:
+      hall_a:
+        label: "Hall A"
+        members: [Filler1]

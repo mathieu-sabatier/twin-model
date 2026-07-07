@@ -1,0 +1,283 @@
+<?xml version="1.0" encoding="utf-8"?>
+<opc:ModelDesign
+    xmlns:opc="http://opcfoundation.org/UA/ModelDesign.xsd"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:ua="http://opcfoundation.org/UA/"
+    xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd"
+    xmlns="https://acme.example/UA/Equipment/"
+    TargetNamespace="https://acme.example/UA/Equipment/"
+    TargetXmlNamespace="https://acme.example/UA/Equipment/Types.xsd"
+    TargetVersion="1.0.0"
+    TargetPublicationDate="2026-07-02T00:00:00Z">
+  <opc:Namespaces>
+    <opc:Namespace Name="AcmeEquipment" Prefix="Acme.Equipment" XmlNamespace="https://acme.example/UA/Equipment/Types.xsd" XmlPrefix="AcmeEquipment">https://acme.example/UA/Equipment/</opc:Namespace>
+    <opc:Namespace Name="OpcUa" Prefix="Opc.Ua" InternalPrefix="Opc.Ua.Server" XmlNamespace="http://opcfoundation.org/UA/2008/02/Types.xsd" XmlPrefix="OpcUa">http://opcfoundation.org/UA/</opc:Namespace>
+  </opc:Namespaces>
+  <opc:DataType SymbolicName="EquipmentState" BaseType="ua:Enumeration">
+    <opc:Description>Operational state common to all equipment</opc:Description>
+    <opc:Fields>
+      <opc:Field Name="Idle" Identifier="0"/>
+      <opc:Field Name="Running" Identifier="1"/>
+      <opc:Field Name="Paused" Identifier="2"/>
+      <opc:Field Name="Fault" Identifier="3"/>
+      <opc:Field Name="Maintenance" Identifier="4"/>
+    </opc:Fields>
+  </opc:DataType>
+  <opc:ObjectType SymbolicName="EquipmentType" BaseType="ua:BaseObjectType" IsAbstract="true">
+    <opc:Description>Abstract base for all plant equipment</opc:Description>
+    <opc:Children>
+      <opc:Property SymbolicName="Manufacturer" DataType="ua:String" ModellingRule="Mandatory"/>
+      <opc:Property SymbolicName="SerialNumber" DataType="ua:String" ModellingRule="Mandatory"/>
+      <opc:Variable SymbolicName="State" DataType="EquipmentState" ValueRank="Scalar" AccessLevel="Read" ModellingRule="Mandatory"/>
+      <opc:Variable SymbolicName="CycleCount" DataType="ua:UInt32" ValueRank="Scalar" AccessLevel="Read" ModellingRule="Optional"/>
+    </opc:Children>
+  </opc:ObjectType>
+  <opc:ObjectType SymbolicName="HeatingZoneType" BaseType="ua:BaseObjectType">
+    <opc:Description>One controllable heating zone inside a furnace</opc:Description>
+    <opc:Children>
+      <opc:Variable SymbolicName="Temperature" DataType="ua:Double" TypeDefinition="ua:AnalogUnitType" ValueRank="Scalar" AccessLevel="Read" ModellingRule="Mandatory">
+        <opc:Children>
+          <opc:Property SymbolicName="ua:EngineeringUnits" DataType="ua:EUInformation" ModellingRule="Mandatory">
+            <opc:DefaultValue>
+              <uax:ExtensionObject>
+                <uax:TypeId>
+                  <uax:Identifier>i=888</uax:Identifier>
+                </uax:TypeId>
+                <uax:Body>
+                  <uax:EUInformation>
+                    <uax:NamespaceUri>http://www.opcfoundation.org/UA/units/un/cefact</uax:NamespaceUri>
+                    <uax:UnitId>4408652</uax:UnitId>
+                    <uax:DisplayName>
+                      <uax:Locale>en</uax:Locale>
+                      <uax:Text>°C</uax:Text>
+                    </uax:DisplayName>
+                    <uax:Description>
+                      <uax:Locale>en</uax:Locale>
+                      <uax:Text>degree Celsius</uax:Text>
+                    </uax:Description>
+                  </uax:EUInformation>
+                </uax:Body>
+              </uax:ExtensionObject>
+            </opc:DefaultValue>
+          </opc:Property>
+        </opc:Children>
+      </opc:Variable>
+      <opc:Variable SymbolicName="PowerLevel" DataType="ua:Double" TypeDefinition="ua:AnalogUnitType" ValueRank="Scalar" AccessLevel="Read" ModellingRule="Mandatory">
+        <opc:Children>
+          <opc:Property SymbolicName="ua:EngineeringUnits" DataType="ua:EUInformation" ModellingRule="Mandatory">
+            <opc:DefaultValue>
+              <uax:ExtensionObject>
+                <uax:TypeId>
+                  <uax:Identifier>i=888</uax:Identifier>
+                </uax:TypeId>
+                <uax:Body>
+                  <uax:EUInformation>
+                    <uax:NamespaceUri>http://www.opcfoundation.org/UA/units/un/cefact</uax:NamespaceUri>
+                    <uax:UnitId>20529</uax:UnitId>
+                    <uax:DisplayName>
+                      <uax:Locale>en</uax:Locale>
+                      <uax:Text>%</uax:Text>
+                    </uax:DisplayName>
+                    <uax:Description>
+                      <uax:Locale>en</uax:Locale>
+                      <uax:Text>percent</uax:Text>
+                    </uax:Description>
+                  </uax:EUInformation>
+                </uax:Body>
+              </uax:ExtensionObject>
+            </opc:DefaultValue>
+          </opc:Property>
+        </opc:Children>
+      </opc:Variable>
+      <opc:Variable SymbolicName="Setpoint" DataType="ua:Double" TypeDefinition="ua:AnalogUnitType" ValueRank="Scalar" AccessLevel="ReadWrite" ModellingRule="Mandatory">
+        <opc:Children>
+          <opc:Property SymbolicName="ua:EngineeringUnits" DataType="ua:EUInformation" ModellingRule="Mandatory">
+            <opc:DefaultValue>
+              <uax:ExtensionObject>
+                <uax:TypeId>
+                  <uax:Identifier>i=888</uax:Identifier>
+                </uax:TypeId>
+                <uax:Body>
+                  <uax:EUInformation>
+                    <uax:NamespaceUri>http://www.opcfoundation.org/UA/units/un/cefact</uax:NamespaceUri>
+                    <uax:UnitId>4408652</uax:UnitId>
+                    <uax:DisplayName>
+                      <uax:Locale>en</uax:Locale>
+                      <uax:Text>°C</uax:Text>
+                    </uax:DisplayName>
+                    <uax:Description>
+                      <uax:Locale>en</uax:Locale>
+                      <uax:Text>degree Celsius</uax:Text>
+                    </uax:Description>
+                  </uax:EUInformation>
+                </uax:Body>
+              </uax:ExtensionObject>
+            </opc:DefaultValue>
+          </opc:Property>
+        </opc:Children>
+      </opc:Variable>
+    </opc:Children>
+  </opc:ObjectType>
+  <opc:ObjectType SymbolicName="FurnaceType" BaseType="EquipmentType">
+    <opc:Description>Batch heat-treatment furnace</opc:Description>
+    <opc:Children>
+      <opc:Variable SymbolicName="DoorClosed" DataType="ua:Boolean" ValueRank="Scalar" AccessLevel="Read" ModellingRule="Mandatory"/>
+      <opc:Object SymbolicName="Zones" TypeDefinition="ua:FolderType" ModellingRule="Mandatory">
+        <opc:Children>
+          <opc:Object SymbolicName="Zone" TypeDefinition="HeatingZoneType" ModellingRule="OptionalPlaceholder">
+            <opc:BrowseName>&lt;ZoneNo&gt;</opc:BrowseName>
+          </opc:Object>
+        </opc:Children>
+      </opc:Object>
+      <opc:Method SymbolicName="StartProgram" ModellingRule="Mandatory">
+        <opc:Description>Start a named heating program</opc:Description>
+        <opc:InputArguments>
+          <opc:Argument Name="ProgramId" DataType="ua:String"/>
+        </opc:InputArguments>
+        <opc:OutputArguments>
+          <opc:Argument Name="Accepted" DataType="ua:Boolean"/>
+        </opc:OutputArguments>
+      </opc:Method>
+    </opc:Children>
+  </opc:ObjectType>
+  <opc:ObjectType SymbolicName="PressType" BaseType="EquipmentType">
+    <opc:Description>Hydraulic forming press</opc:Description>
+    <opc:Children>
+      <opc:Variable SymbolicName="Force" DataType="ua:Double" TypeDefinition="ua:AnalogUnitType" ValueRank="Scalar" AccessLevel="Read" ModellingRule="Mandatory">
+        <opc:Children>
+          <opc:Property SymbolicName="ua:EngineeringUnits" DataType="ua:EUInformation" ModellingRule="Mandatory">
+            <opc:DefaultValue>
+              <uax:ExtensionObject>
+                <uax:TypeId>
+                  <uax:Identifier>i=888</uax:Identifier>
+                </uax:TypeId>
+                <uax:Body>
+                  <uax:EUInformation>
+                    <uax:NamespaceUri>http://www.opcfoundation.org/UA/units/un/cefact</uax:NamespaceUri>
+                    <uax:UnitId>4338743</uax:UnitId>
+                    <uax:DisplayName>
+                      <uax:Locale>en</uax:Locale>
+                      <uax:Text>kN</uax:Text>
+                    </uax:DisplayName>
+                    <uax:Description>
+                      <uax:Locale>en</uax:Locale>
+                      <uax:Text>kilonewton</uax:Text>
+                    </uax:Description>
+                  </uax:EUInformation>
+                </uax:Body>
+              </uax:ExtensionObject>
+            </opc:DefaultValue>
+          </opc:Property>
+        </opc:Children>
+      </opc:Variable>
+      <opc:Variable SymbolicName="RamPosition" DataType="ua:Double" TypeDefinition="ua:AnalogUnitType" ValueRank="Scalar" AccessLevel="Read" ModellingRule="Mandatory">
+        <opc:Children>
+          <opc:Property SymbolicName="ua:EngineeringUnits" DataType="ua:EUInformation" ModellingRule="Mandatory">
+            <opc:DefaultValue>
+              <uax:ExtensionObject>
+                <uax:TypeId>
+                  <uax:Identifier>i=888</uax:Identifier>
+                </uax:TypeId>
+                <uax:Body>
+                  <uax:EUInformation>
+                    <uax:NamespaceUri>http://www.opcfoundation.org/UA/units/un/cefact</uax:NamespaceUri>
+                    <uax:UnitId>5066068</uax:UnitId>
+                    <uax:DisplayName>
+                      <uax:Locale>en</uax:Locale>
+                      <uax:Text>mm</uax:Text>
+                    </uax:DisplayName>
+                    <uax:Description>
+                      <uax:Locale>en</uax:Locale>
+                      <uax:Text>millimetre</uax:Text>
+                    </uax:Description>
+                  </uax:EUInformation>
+                </uax:Body>
+              </uax:ExtensionObject>
+            </opc:DefaultValue>
+          </opc:Property>
+        </opc:Children>
+      </opc:Variable>
+      <opc:Variable SymbolicName="MaxForce" DataType="ua:Double" TypeDefinition="ua:AnalogUnitType" ValueRank="Scalar" AccessLevel="Read" ModellingRule="Mandatory">
+        <opc:Children>
+          <opc:Property SymbolicName="ua:EngineeringUnits" DataType="ua:EUInformation" ModellingRule="Mandatory">
+            <opc:DefaultValue>
+              <uax:ExtensionObject>
+                <uax:TypeId>
+                  <uax:Identifier>i=888</uax:Identifier>
+                </uax:TypeId>
+                <uax:Body>
+                  <uax:EUInformation>
+                    <uax:NamespaceUri>http://www.opcfoundation.org/UA/units/un/cefact</uax:NamespaceUri>
+                    <uax:UnitId>4338743</uax:UnitId>
+                    <uax:DisplayName>
+                      <uax:Locale>en</uax:Locale>
+                      <uax:Text>kN</uax:Text>
+                    </uax:DisplayName>
+                    <uax:Description>
+                      <uax:Locale>en</uax:Locale>
+                      <uax:Text>kilonewton</uax:Text>
+                    </uax:Description>
+                  </uax:EUInformation>
+                </uax:Body>
+              </uax:ExtensionObject>
+            </opc:DefaultValue>
+          </opc:Property>
+        </opc:Children>
+      </opc:Variable>
+      <opc:Method SymbolicName="EmergencyStop" ModellingRule="Mandatory"/>
+    </opc:Children>
+  </opc:ObjectType>
+  <opc:Object SymbolicName="Furnace01" TypeDefinition="FurnaceType">
+    <opc:References>
+      <opc:Reference IsInverse="true">
+        <opc:ReferenceType>ua:Organizes</opc:ReferenceType>
+        <opc:TargetId>ua:ObjectsFolder</opc:TargetId>
+      </opc:Reference>
+    </opc:References>
+  </opc:Object>
+  <opc:Object SymbolicName="Press01" TypeDefinition="PressType">
+    <opc:References>
+      <opc:Reference IsInverse="true">
+        <opc:ReferenceType>ua:Organizes</opc:ReferenceType>
+        <opc:TargetId>ua:ObjectsFolder</opc:TargetId>
+      </opc:Reference>
+    </opc:References>
+  </opc:Object>
+  <opc:Object SymbolicName="Furnace02" TypeDefinition="FurnaceType">
+    <opc:Children>
+      <opc:Property SymbolicName="Manufacturer" DataType="ua:String">
+        <opc:DefaultValue>
+          <uax:String>ACME GmbH</uax:String>
+        </opc:DefaultValue>
+      </opc:Property>
+      <opc:Property SymbolicName="SerialNumber" DataType="ua:String">
+        <opc:DefaultValue>
+          <uax:String>F-2026-0042</uax:String>
+        </opc:DefaultValue>
+      </opc:Property>
+      <opc:Variable SymbolicName="State" DataType="EquipmentState" ValueRank="Scalar">
+        <opc:DefaultValue>
+          <uax:Int32>1</uax:Int32>
+        </opc:DefaultValue>
+      </opc:Variable>
+      <opc:Variable SymbolicName="CycleCount" DataType="ua:UInt32" ValueRank="Scalar">
+        <opc:DefaultValue>
+          <uax:UInt32>42</uax:UInt32>
+        </opc:DefaultValue>
+      </opc:Variable>
+      <opc:Variable SymbolicName="DoorClosed" DataType="ua:Boolean" ValueRank="Scalar">
+        <opc:DefaultValue>
+          <uax:Boolean>true</uax:Boolean>
+        </opc:DefaultValue>
+      </opc:Variable>
+      <opc:Object SymbolicName="Zone1" TypeDefinition="HeatingZoneType"/>
+      <opc:Object SymbolicName="Zone2" TypeDefinition="HeatingZoneType"/>
+    </opc:Children>
+    <opc:References>
+      <opc:Reference IsInverse="true">
+        <opc:ReferenceType>ua:Organizes</opc:ReferenceType>
+        <opc:TargetId>ua:ObjectsFolder</opc:TargetId>
+      </opc:Reference>
+    </opc:References>
+  </opc:Object>
+</opc:ModelDesign>

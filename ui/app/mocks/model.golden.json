@@ -1,0 +1,663 @@
+{
+  "pos": {
+    "file": "equipment.yaml",
+    "line": 11,
+    "col": 1
+  },
+  "name": "AcmeEquipment",
+  "namespace": "https://acme.example/UA/Equipment/",
+  "prefix": "Acme.Equipment",
+  "version": "1.0.0",
+  "publicationDate": "2026-07-02",
+  "imports": [
+    {
+      "pos": {
+        "file": "equipment.yaml",
+        "line": 19,
+        "col": 3
+      },
+      "alias": "OpcUa",
+      "uri": "http://opcfoundation.org/UA/"
+    }
+  ],
+  "enums": [
+    {
+      "pos": {
+        "file": "equipment.yaml",
+        "line": 23,
+        "col": 3
+      },
+      "name": "EquipmentState",
+      "doc": "Operational state common to all equipment",
+      "values": [
+        {
+          "pos": {
+            "file": "equipment.yaml",
+            "line": 25,
+            "col": 14
+          },
+          "name": "Idle",
+          "identifier": 0
+        },
+        {
+          "pos": {
+            "file": "equipment.yaml",
+            "line": 25,
+            "col": 20
+          },
+          "name": "Running",
+          "identifier": 1
+        },
+        {
+          "pos": {
+            "file": "equipment.yaml",
+            "line": 25,
+            "col": 29
+          },
+          "name": "Paused",
+          "identifier": 2
+        },
+        {
+          "pos": {
+            "file": "equipment.yaml",
+            "line": 25,
+            "col": 37
+          },
+          "name": "Fault",
+          "identifier": 3
+        },
+        {
+          "pos": {
+            "file": "equipment.yaml",
+            "line": 25,
+            "col": 44
+          },
+          "name": "Maintenance",
+          "identifier": 4
+        }
+      ]
+    }
+  ],
+  "objectTypes": [
+    {
+      "pos": {
+        "file": "equipment.yaml",
+        "line": 29,
+        "col": 3
+      },
+      "name": "EquipmentType",
+      "doc": "Abstract base for all plant equipment",
+      "base": {
+        "pos": {
+          "file": "equipment.yaml",
+          "line": 31,
+          "col": 11
+        },
+        "alias": "OpcUa",
+        "name": "BaseObjectType",
+        "raw": "OpcUa:BaseObjectType"
+      },
+      "abstract": true,
+      "members": [
+        {
+          "pos": {
+            "file": "equipment.yaml",
+            "line": 34,
+            "col": 7
+          },
+          "name": "Manufacturer",
+          "kind": "property",
+          "rule": "mandatory",
+          "access": "r",
+          "type": {
+            "pos": {
+              "file": "equipment.yaml",
+              "line": 34,
+              "col": 46
+            },
+            "name": "String",
+            "raw": "String"
+          }
+        },
+        {
+          "pos": {
+            "file": "equipment.yaml",
+            "line": 35,
+            "col": 7
+          },
+          "name": "SerialNumber",
+          "kind": "property",
+          "rule": "mandatory",
+          "access": "r",
+          "type": {
+            "pos": {
+              "file": "equipment.yaml",
+              "line": 35,
+              "col": 46
+            },
+            "name": "String",
+            "raw": "String"
+          }
+        },
+        {
+          "pos": {
+            "file": "equipment.yaml",
+            "line": 36,
+            "col": 7
+          },
+          "name": "State",
+          "kind": "variable",
+          "rule": "mandatory",
+          "access": "r",
+          "type": {
+            "pos": {
+              "file": "equipment.yaml",
+              "line": 36,
+              "col": 30
+            },
+            "name": "EquipmentState",
+            "raw": "EquipmentState"
+          }
+        },
+        {
+          "pos": {
+            "file": "equipment.yaml",
+            "line": 37,
+            "col": 7
+          },
+          "name": "CycleCount",
+          "kind": "variable",
+          "rule": "optional",
+          "access": "r",
+          "type": {
+            "pos": {
+              "file": "equipment.yaml",
+              "line": 37,
+              "col": 30
+            },
+            "name": "UInt32",
+            "raw": "UInt32"
+          }
+        }
+      ]
+    },
+    {
+      "pos": {
+        "file": "equipment.yaml",
+        "line": 39,
+        "col": 3
+      },
+      "name": "HeatingZoneType",
+      "doc": "One controllable heating zone inside a furnace",
+      "base": {
+        "pos": {
+          "file": "equipment.yaml",
+          "line": 41,
+          "col": 11
+        },
+        "alias": "OpcUa",
+        "name": "BaseObjectType",
+        "raw": "OpcUa:BaseObjectType"
+      },
+      "members": [
+        {
+          "pos": {
+            "file": "equipment.yaml",
+            "line": 43,
+            "col": 7
+          },
+          "name": "Temperature",
+          "kind": "variable",
+          "rule": "mandatory",
+          "access": "r",
+          "type": {
+            "pos": {
+              "file": "equipment.yaml",
+              "line": 43,
+              "col": 28
+            },
+            "name": "Double",
+            "raw": "Double"
+          },
+          "unit": "°C"
+        },
+        {
+          "pos": {
+            "file": "equipment.yaml",
+            "line": 44,
+            "col": 7
+          },
+          "name": "PowerLevel",
+          "kind": "variable",
+          "rule": "mandatory",
+          "access": "r",
+          "type": {
+            "pos": {
+              "file": "equipment.yaml",
+              "line": 44,
+              "col": 28
+            },
+            "name": "Double",
+            "raw": "Double"
+          },
+          "unit": "%"
+        },
+        {
+          "pos": {
+            "file": "equipment.yaml",
+            "line": 45,
+            "col": 7
+          },
+          "name": "Setpoint",
+          "kind": "variable",
+          "rule": "mandatory",
+          "access": "rw",
+          "type": {
+            "pos": {
+              "file": "equipment.yaml",
+              "line": 45,
+              "col": 28
+            },
+            "name": "Double",
+            "raw": "Double"
+          },
+          "unit": "°C"
+        }
+      ]
+    },
+    {
+      "pos": {
+        "file": "equipment.yaml",
+        "line": 47,
+        "col": 3
+      },
+      "name": "FurnaceType",
+      "doc": "Batch heat-treatment furnace",
+      "base": {
+        "pos": {
+          "file": "equipment.yaml",
+          "line": 49,
+          "col": 11
+        },
+        "name": "EquipmentType",
+        "raw": "EquipmentType"
+      },
+      "members": [
+        {
+          "pos": {
+            "file": "equipment.yaml",
+            "line": 51,
+            "col": 7
+          },
+          "name": "DoorClosed",
+          "kind": "variable",
+          "rule": "mandatory",
+          "access": "r",
+          "type": {
+            "pos": {
+              "file": "equipment.yaml",
+              "line": 51,
+              "col": 27
+            },
+            "name": "Boolean",
+            "raw": "Boolean"
+          }
+        },
+        {
+          "pos": {
+            "file": "equipment.yaml",
+            "line": 52,
+            "col": 7
+          },
+          "name": "Zones",
+          "kind": "object",
+          "rule": "mandatory",
+          "access": "r",
+          "type": {
+            "pos": {
+              "file": "equipment.yaml",
+              "line": 54,
+              "col": 15
+            },
+            "alias": "OpcUa",
+            "name": "FolderType",
+            "raw": "OpcUa:FolderType"
+          },
+          "children": [
+            {
+              "pos": {
+                "file": "equipment.yaml",
+                "line": 56,
+                "col": 11
+              },
+              "name": "Zone",
+              "browseName": "\u003cZoneNo\u003e",
+              "kind": "object",
+              "rule": "optional_placeholder",
+              "access": "r",
+              "type": {
+                "pos": {
+                  "file": "equipment.yaml",
+                  "line": 56,
+                  "col": 45
+                },
+                "name": "HeatingZoneType",
+                "raw": "HeatingZoneType"
+              }
+            }
+          ]
+        },
+        {
+          "pos": {
+            "file": "equipment.yaml",
+            "line": 57,
+            "col": 7
+          },
+          "name": "StartProgram",
+          "kind": "method",
+          "rule": "mandatory",
+          "access": "r",
+          "doc": "Start a named heating program",
+          "in": [
+            {
+              "pos": {
+                "file": "equipment.yaml",
+                "line": 60,
+                "col": 16
+              },
+              "name": "ProgramId",
+              "type": {
+                "pos": {
+                  "file": "equipment.yaml",
+                  "line": 60,
+                  "col": 41
+                },
+                "name": "String",
+                "raw": "String"
+              }
+            }
+          ],
+          "out": [
+            {
+              "pos": {
+                "file": "equipment.yaml",
+                "line": 61,
+                "col": 16
+              },
+              "name": "Accepted",
+              "type": {
+                "pos": {
+                  "file": "equipment.yaml",
+                  "line": 61,
+                  "col": 41
+                },
+                "name": "Boolean",
+                "raw": "Boolean"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "pos": {
+        "file": "equipment.yaml",
+        "line": 63,
+        "col": 3
+      },
+      "name": "PressType",
+      "doc": "Hydraulic forming press",
+      "base": {
+        "pos": {
+          "file": "equipment.yaml",
+          "line": 65,
+          "col": 11
+        },
+        "name": "EquipmentType",
+        "raw": "EquipmentType"
+      },
+      "members": [
+        {
+          "pos": {
+            "file": "equipment.yaml",
+            "line": 67,
+            "col": 7
+          },
+          "name": "Force",
+          "kind": "variable",
+          "rule": "mandatory",
+          "access": "r",
+          "type": {
+            "pos": {
+              "file": "equipment.yaml",
+              "line": 67,
+              "col": 30
+            },
+            "name": "Double",
+            "raw": "Double"
+          },
+          "unit": "kN"
+        },
+        {
+          "pos": {
+            "file": "equipment.yaml",
+            "line": 68,
+            "col": 7
+          },
+          "name": "RamPosition",
+          "kind": "variable",
+          "rule": "mandatory",
+          "access": "r",
+          "type": {
+            "pos": {
+              "file": "equipment.yaml",
+              "line": 68,
+              "col": 30
+            },
+            "name": "Double",
+            "raw": "Double"
+          },
+          "unit": "mm"
+        },
+        {
+          "pos": {
+            "file": "equipment.yaml",
+            "line": 69,
+            "col": 7
+          },
+          "name": "MaxForce",
+          "kind": "variable",
+          "rule": "mandatory",
+          "access": "r",
+          "type": {
+            "pos": {
+              "file": "equipment.yaml",
+              "line": 69,
+              "col": 30
+            },
+            "name": "Double",
+            "raw": "Double"
+          },
+          "unit": "kN"
+        },
+        {
+          "pos": {
+            "file": "equipment.yaml",
+            "line": 70,
+            "col": 7
+          },
+          "name": "EmergencyStop",
+          "kind": "method",
+          "rule": "mandatory",
+          "access": "r"
+        }
+      ]
+    }
+  ],
+  "instances": [
+    {
+      "pos": {
+        "file": "equipment.yaml",
+        "line": 75,
+        "col": 3
+      },
+      "name": "Furnace01",
+      "type": {
+        "pos": {
+          "file": "equipment.yaml",
+          "line": 75,
+          "col": 22
+        },
+        "name": "FurnaceType",
+        "raw": "FurnaceType"
+      },
+      "under": {
+        "pos": {
+          "file": "equipment.yaml",
+          "line": 75,
+          "col": 42
+        },
+        "alias": "OpcUa",
+        "name": "ObjectsFolder",
+        "raw": "OpcUa:ObjectsFolder"
+      }
+    },
+    {
+      "pos": {
+        "file": "equipment.yaml",
+        "line": 76,
+        "col": 3
+      },
+      "name": "Press01",
+      "type": {
+        "pos": {
+          "file": "equipment.yaml",
+          "line": 76,
+          "col": 22
+        },
+        "name": "PressType",
+        "raw": "PressType"
+      },
+      "under": {
+        "pos": {
+          "file": "equipment.yaml",
+          "line": 76,
+          "col": 42
+        },
+        "alias": "OpcUa",
+        "name": "ObjectsFolder",
+        "raw": "OpcUa:ObjectsFolder"
+      }
+    },
+    {
+      "pos": {
+        "file": "equipment.yaml",
+        "line": 80,
+        "col": 3
+      },
+      "name": "Furnace02",
+      "type": {
+        "pos": {
+          "file": "equipment.yaml",
+          "line": 81,
+          "col": 11
+        },
+        "name": "FurnaceType",
+        "raw": "FurnaceType"
+      },
+      "under": {
+        "pos": {
+          "file": "equipment.yaml",
+          "line": 82,
+          "col": 12
+        },
+        "alias": "OpcUa",
+        "name": "ObjectsFolder",
+        "raw": "OpcUa:ObjectsFolder"
+      },
+      "values": [
+        {
+          "pos": {
+            "file": "equipment.yaml",
+            "line": 84,
+            "col": 7
+          },
+          "member": "Manufacturer",
+          "raw": "ACME GmbH"
+        },
+        {
+          "pos": {
+            "file": "equipment.yaml",
+            "line": 85,
+            "col": 7
+          },
+          "member": "SerialNumber",
+          "raw": "F-2026-0042"
+        },
+        {
+          "pos": {
+            "file": "equipment.yaml",
+            "line": 86,
+            "col": 7
+          },
+          "member": "State",
+          "raw": "Running"
+        },
+        {
+          "pos": {
+            "file": "equipment.yaml",
+            "line": 87,
+            "col": 7
+          },
+          "member": "CycleCount",
+          "raw": "42"
+        },
+        {
+          "pos": {
+            "file": "equipment.yaml",
+            "line": 88,
+            "col": 7
+          },
+          "member": "DoorClosed",
+          "raw": "true"
+        }
+      ],
+      "children": [
+        {
+          "pos": {
+            "file": "equipment.yaml",
+            "line": 90,
+            "col": 7
+          },
+          "name": "Zone1",
+          "of": {
+            "pos": {
+              "file": "equipment.yaml",
+              "line": 90,
+              "col": 20
+            },
+            "name": "Zone\u003cNo\u003e",
+            "raw": "Zone\u003cNo\u003e"
+          }
+        },
+        {
+          "pos": {
+            "file": "equipment.yaml",
+            "line": 91,
+            "col": 7
+          },
+          "name": "Zone2",
+          "of": {
+            "pos": {
+              "file": "equipment.yaml",
+              "line": 91,
+              "col": 20
+            },
+            "name": "Zone\u003cNo\u003e",
+            "raw": "Zone\u003cNo\u003e"
+          }
+        }
+      ]
+    }
+  ]
+}

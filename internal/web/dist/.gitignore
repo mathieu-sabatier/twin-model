@@ -1,0 +1,7 @@
+# The SPA bundle is a build artifact produced by `task ui:generate`. Only this
+# file and the placeholder index.html are committed, so `go build`/`go test`
+# compile before a UI build; the generated assets (_nuxt/, etc.) stay untracked.
+# A local UI build overwrites index.html — do not commit the built version.
+*
+!.gitignore
+!index.html

@@ -1,0 +1,12 @@
+ui/node_modules
+ui/.nuxt
+ui/.output
+internal/web/dist/_nuxt
+internal/web/dist/200.html
+internal/web/dist/404.html
+out
+twinmodel
+.git
+.claude
+.gstack
+.superpowers

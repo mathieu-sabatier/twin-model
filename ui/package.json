@@ -1,0 +1,41 @@
+{
+  "name": "twinmodel-web",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "description": "Self-contained Nuxt SPA for editing OPC UA object types & instances (twinmodel Phase 2.2).",
+  "scripts": {
+    "dev": "nuxi dev",
+    "generate": "nuxi generate",
+    "build": "nuxi build",
+    "test": "vitest run",
+    "typecheck": "nuxi prepare && vue-tsc --noEmit -p .nuxt/tsconfig.app.json && vue-tsc --noEmit -p .nuxt/tsconfig.node.json && vue-tsc --noEmit -p .nuxt/tsconfig.shared.json && vue-tsc --noEmit -p .nuxt/tsconfig.server.json"
+  },
+  "dependencies": {
+    "@iconify-json/lucide": "^1.2.116",
+    "@nuxt/ui": "^4.9.0",
+    "@pinia/nuxt": "^0.11.3",
+    "@vueuse/core": "^14.3.0",
+    "mermaid": "^11.16.0",
+    "nuxt": "^4.4.8",
+    "pinia": "^3.0.4",
+    "vue": "^3.5.0",
+    "vue-router": "^4.5.0",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@nuxt/test-utils": "^4.0.3",
+    "@vue/test-utils": "^2.4.11",
+    "happy-dom": "^20.10.6",
+    "msw": "^2.14.6",
+    "tailwindcss": "^4.3.2",
+    "typescript": "^5.6.0",
+    "vitest": "^4.1.9",
+    "vue-tsc": "^3.3.6"
+  },
+  "msw": {
+    "workerDirectory": [
+      "public"
+    ]
+  }
+}

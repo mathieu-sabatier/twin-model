@@ -1,0 +1,16 @@
+[
+  {
+    "elementId": "nsu=http://opcfoundation.org/UA/;s=HasComponent",
+    "displayName": "HasComponent",
+    "namespaceUri": "http://opcfoundation.org/UA/",
+    "relationshipId": "HasComponent",
+    "reverseOf": "ComponentOf"
+  },
+  {
+    "elementId": "nsu=http://opcfoundation.org/UA/;s=Organizes",
+    "displayName": "Organizes",
+    "namespaceUri": "http://opcfoundation.org/UA/",
+    "relationshipId": "Organizes",
+    "reverseOf": "OrganizedBy"
+  }
+]

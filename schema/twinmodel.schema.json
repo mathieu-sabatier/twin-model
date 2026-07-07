@@ -1,0 +1,167 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://acme.example/schema/twinmodel.schema.json",
+  "title": "twinmodel DSL",
+  "description": "YAML source of truth for an OPC UA information model, transpiled to a UA-ModelCompiler ModelDesign.xml by `twinmodel build`.",
+  "type": "object",
+  "required": ["model"],
+  "additionalProperties": false,
+  "properties": {
+    "model": { "$ref": "#/$defs/model" },
+    "imports": {
+      "description": "Alias -> namespace URI. OpcUa (ns0) is always available even if omitted.",
+      "type": "object",
+      "additionalProperties": { "type": "string", "format": "uri" }
+    },
+    "enums": {
+      "type": "object",
+      "additionalProperties": { "$ref": "#/$defs/enum" }
+    },
+    "object_types": {
+      "type": "object",
+      "additionalProperties": { "$ref": "#/$defs/objectType" }
+    },
+    "instances": {
+      "type": "object",
+      "additionalProperties": { "$ref": "#/$defs/instance" }
+    }
+  },
+  "$defs": {
+    "model": {
+      "type": "object",
+      "required": ["name", "namespace", "version", "publication_date"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string", "description": "Model name / code constant." },
+        "namespace": {
+          "type": "string",
+          "description": "OPC UA namespace URI. Must end with '/'.",
+          "pattern": "/$"
+        },
+        "prefix": { "type": "string", "description": "Code/file prefix, e.g. Acme.Equipment." },
+        "version": {
+          "type": "string",
+          "description": "Semver MAJOR.MINOR.PATCH.",
+          "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+        },
+        "publication_date": {
+          "type": "string",
+          "description": "YYYY-MM-DD.",
+          "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+        }
+      }
+    },
+    "enum": {
+      "type": "object",
+      "required": ["values"],
+      "additionalProperties": false,
+      "properties": {
+        "doc": { "type": "string" },
+        "values": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "oneOf": [
+              { "type": "string", "description": "Field name; id is its 0-based position." },
+              {
+                "type": "object",
+                "description": "Explicit id: { Name: <int> }.",
+                "minProperties": 1,
+                "maxProperties": 1,
+                "additionalProperties": { "type": "integer" }
+              }
+            ]
+          }
+        }
+      }
+    },
+    "objectType": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "doc": { "type": "string" },
+        "base": {
+          "type": "string",
+          "description": "Base type reference, e.g. OpcUa:BaseObjectType or a local type name."
+        },
+        "abstract": { "type": "boolean", "default": false },
+        "members": {
+          "type": "object",
+          "additionalProperties": { "$ref": "#/$defs/member" }
+        }
+      }
+    },
+    "member": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "enum": ["property", "variable", "object", "method"],
+          "default": "variable"
+        },
+        "rule": {
+          "enum": ["mandatory", "optional", "optional_placeholder", "mandatory_placeholder"],
+          "default": "mandatory"
+        },
+        "access": { "enum": ["r", "rw"], "default": "r" },
+        "type": {
+          "type": "string",
+          "description": "Built-in scalar (String, Double, ...), Alias:Name, or a local type."
+        },
+        "unit": {
+          "type": "string",
+          "description": "Engineering-unit symbol (e.g. °C, kN). Requires a numeric variable. Expands to AnalogUnitType + EngineeringUnits."
+        },
+        "doc": { "type": "string" },
+        "children": {
+          "type": "object",
+          "description": "Nested members (for kind: object folders). Keys may use Name<Suffix> placeholder syntax.",
+          "additionalProperties": { "$ref": "#/$defs/member" }
+        },
+        "in": {
+          "type": "array",
+          "description": "Method input arguments.",
+          "items": { "$ref": "#/$defs/argument" }
+        },
+        "out": {
+          "type": "array",
+          "description": "Method output arguments.",
+          "items": { "$ref": "#/$defs/argument" }
+        }
+      }
+    },
+    "argument": {
+      "type": "object",
+      "required": ["name", "type"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string" },
+        "type": { "type": "string" }
+      }
+    },
+    "instance": {
+      "type": "object",
+      "required": ["type", "under"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "type": "string", "description": "A non-abstract ObjectType." },
+        "under": { "type": "string", "description": "Parent to nest under: an import target (e.g. OpcUa:ObjectsFolder) or another instance name." },
+        "values": {
+          "type": "object",
+          "description": "Override property/variable initial values. Keys are (inherited) value-bearing member names.",
+          "additionalProperties": { "type": ["string", "number", "boolean"] }
+        },
+        "children": {
+          "type": "object",
+          "description": "Instantiate placeholders. Each child names a placeholder via `of`.",
+          "additionalProperties": {
+            "type": "object",
+            "required": ["of"],
+            "additionalProperties": false,
+            "properties": { "of": { "type": "string", "description": "Placeholder reference, e.g. \"Zone<No>\"." } }
+          }
+        }
+      }
+    }
+  }
+}

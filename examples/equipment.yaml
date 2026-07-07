@@ -1,0 +1,91 @@
+# equipment.yaml — Acme equipment information model (source of truth, PR-reviewed)
+#
+# Conventions the transpiler applies (keep the DSL terse, push defaults into code):
+#   - kind: property|variable|object|method   (default: variable)
+#   - rule: mandatory|optional|optional_placeholder|mandatory_placeholder (default: mandatory)
+#   - access: r|rw                            (default: r)
+#   - type without prefix -> this model's namespace; "OpcUa:X" -> namespace 0
+#   - unit: "<symbol>" -> AnalogUnitType + EngineeringUnits (EUInformation, UNECE code)
+#   - "Name<Suffix>" child key -> placeholder (BrowseName pattern <NameSuffix>)
+
+model:
+  name: AcmeEquipment
+  namespace: https://acme.example/UA/Equipment/
+  prefix: Acme.Equipment          # file/code prefix used by UA-ModelCompiler
+  version: 1.0.0
+  publication_date: 2026-07-02
+
+imports:
+  OpcUa: http://opcfoundation.org/UA/   # ns0 core model (always required)
+  # DI: http://opcfoundation.org/UA/DI/ # uncomment to rebase EquipmentType on DI DeviceType
+
+enums:
+  EquipmentState:
+    doc: Operational state common to all equipment
+    values: [Idle, Running, Paused, Fault, Maintenance]
+
+object_types:
+
+  EquipmentType:
+    doc: Abstract base for all plant equipment
+    base: OpcUa:BaseObjectType
+    abstract: true
+    members:
+      Manufacturer:  { kind: property, type: String }
+      SerialNumber:  { kind: property, type: String }
+      State:         { type: EquipmentState }
+      CycleCount:    { type: UInt32, rule: optional }
+
+  HeatingZoneType:
+    doc: One controllable heating zone inside a furnace
+    base: OpcUa:BaseObjectType
+    members:
+      Temperature: { type: Double, unit: "°C" }
+      PowerLevel:  { type: Double, unit: "%" }
+      Setpoint:    { type: Double, unit: "°C", access: rw }
+
+  FurnaceType:
+    doc: Batch heat-treatment furnace
+    base: EquipmentType
+    members:
+      DoorClosed: { type: Boolean }
+      Zones:
+        kind: object
+        type: OpcUa:FolderType
+        children:
+          "Zone<No>": { kind: object, type: HeatingZoneType, rule: optional_placeholder }
+      StartProgram:
+        kind: method
+        doc: Start a named heating program
+        in:  [ { name: ProgramId, type: String } ]
+        out: [ { name: Accepted,  type: Boolean } ]
+
+  PressType:
+    doc: Hydraulic forming press
+    base: EquipmentType
+    members:
+      Force:         { type: Double, unit: kN }
+      RamPosition:   { type: Double, unit: mm }
+      MaxForce:      { type: Double, unit: kN }                   # rated max force -> analog variable (EU requires a VariableType)
+      EmergencyStop: { kind: method }
+
+# Optional: declare well-known instances (plant topology) in the same model.
+# Many teams keep types and instances in separate YAML files / separate models.
+instances:
+  Furnace01: { type: FurnaceType, under: OpcUa:ObjectsFolder }
+  Press01:   { type: PressType,   under: OpcUa:ObjectsFolder }
+
+  # Furnace02 shows instance overrides: initial values (property + variable, incl.
+  # an enum) and two instantiated Zone placeholders.
+  Furnace02:
+    type: FurnaceType
+    under: OpcUa:ObjectsFolder
+    values:
+      Manufacturer: "ACME GmbH"       # property (String)
+      SerialNumber: "F-2026-0042"     # property (String)
+      State: Running                  # variable (EquipmentState enum -> Int32)
+      CycleCount: 42                  # variable (UInt32)
+      DoorClosed: true                # variable (Boolean)
+    children:
+      Zone1: { of: "Zone<No>" }
+      Zone2: { of: "Zone<No>" }

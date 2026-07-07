@@ -1,0 +1,53 @@
+{
+  "alias": "DI",
+  "uri": "http://opcfoundation.org/UA/DI/",
+  "name": "DeviceType",
+  "nodeClass": "ObjectType",
+  "abstract": true,
+  "baseChain": [
+    {
+      "alias": "",
+      "name": "TopologyElementType",
+      "uri": "http://opcfoundation.org/UA/DI/"
+    },
+    {
+      "alias": "",
+      "name": "BaseObjectType",
+      "uri": "http://opcfoundation.org/UA/"
+    }
+  ],
+  "members": [
+    {
+      "name": "Manufacturer",
+      "kind": "property",
+      "placeholder": false
+    },
+    {
+      "name": "ParameterSet",
+      "kind": "object",
+      "placeholder": false,
+      "type": {
+        "alias": "DI",
+        "name": "FunctionalGroupType",
+        "uri": "http://opcfoundation.org/UA/DI/"
+      }
+    },
+    {
+      "name": "Level",
+      "kind": "variable",
+      "placeholder": false,
+      "enum": {
+        "members": [
+          {
+            "name": "Enterprise",
+            "value": 0
+          },
+          {
+            "name": "Site",
+            "value": 1
+          }
+        ]
+      }
+    }
+  ]
+}

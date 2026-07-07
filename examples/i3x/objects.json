@@ -1,0 +1,57 @@
+[
+  {
+    "elementId": "nsu=https://acme.example/UA/Equipment/;s=Furnace01",
+    "displayName": "Furnace01",
+    "typeElementId": "nsu=https://acme.example/UA/Equipment/;s=FurnaceType",
+    "parentId": "nsu=http://opcfoundation.org/UA/;s=ObjectsFolder",
+    "isComposition": false
+  },
+  {
+    "elementId": "nsu=https://acme.example/UA/Equipment/;s=Furnace01_Zones",
+    "displayName": "Zones",
+    "typeElementId": "nsu=http://opcfoundation.org/UA/;s=FolderType",
+    "parentId": "nsu=https://acme.example/UA/Equipment/;s=Furnace01",
+    "isComposition": true
+  },
+  {
+    "elementId": "nsu=https://acme.example/UA/Equipment/;s=Press01",
+    "displayName": "Press01",
+    "typeElementId": "nsu=https://acme.example/UA/Equipment/;s=PressType",
+    "parentId": "nsu=http://opcfoundation.org/UA/;s=ObjectsFolder",
+    "isComposition": false
+  },
+  {
+    "elementId": "nsu=https://acme.example/UA/Equipment/;s=Furnace02",
+    "displayName": "Furnace02",
+    "typeElementId": "nsu=https://acme.example/UA/Equipment/;s=FurnaceType",
+    "parentId": "nsu=http://opcfoundation.org/UA/;s=ObjectsFolder",
+    "isComposition": false
+  },
+  {
+    "elementId": "nsu=https://acme.example/UA/Equipment/;s=Furnace02_Zones",
+    "displayName": "Zones",
+    "typeElementId": "nsu=http://opcfoundation.org/UA/;s=FolderType",
+    "parentId": "nsu=https://acme.example/UA/Equipment/;s=Furnace02",
+    "isComposition": true
+  },
+  {
+    "elementId": "nsu=https://acme.example/UA/Equipment/;s=Furnace02_Zone1",
+    "displayName": "Zone1",
+    "typeElementId": "nsu=https://acme.example/UA/Equipment/;s=HeatingZoneType",
+    "parentId": "nsu=https://acme.example/UA/Equipment/;s=Furnace02",
+    "isComposition": true
+  },
+  {
+    "elementId": "nsu=https://acme.example/UA/Equipment/;s=Furnace02_Zone2",
+    "displayName": "Zone2",
+    "typeElementId": "nsu=https://acme.example/UA/Equipment/;s=HeatingZoneType",
+    "parentId": "nsu=https://acme.example/UA/Equipment/;s=Furnace02",
+    "isComposition": true
+  },
+  {
+    "elementId": "nsu=http://opcfoundation.org/UA/;s=ObjectsFolder",
+    "displayName": "ObjectsFolder",
+    "typeElementId": "nsu=http://opcfoundation.org/UA/;s=FolderType",
+    "isComposition": false
+  }
+]

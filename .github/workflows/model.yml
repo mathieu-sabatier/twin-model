@@ -1,0 +1,106 @@
+name: model
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  model:
+    runs-on: ubuntu-latest
+    env:
+      MODEL_XML: out/Equipment.ModelDesign.xml
+      IDS_CSV: examples/Equipment.ModelDesign.csv
+      MC_VERSION: v105
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.26'
+
+      - uses: arduino/setup-task@v2
+        with:
+          version: 3.x
+
+      # go vet + go test, then transpile the DSL to ModelDesign XML.
+      - name: Check + transpile
+        run: |
+          task check
+          task lint-model
+          task build-model
+
+      # Regenerate the i3X JSON and fail if it drifts from the committed goldens
+      # (the golden test in `task check` also covers this; this guards the files).
+      - name: Export i3X (+ golden guard)
+        run: |
+          task export-i3x
+          if ! git diff --exit-code -- examples/i3x; then
+            echo "::error::i3X goldens changed. Run 'task export-i3x' and commit examples/i3x/."
+            exit 1
+          fi
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Install UA-ModelCompiler
+        run: dotnet tool install --global OPCFoundation.Opc.Ua.ModelCompiler.Tool
+
+      # Compile ModelDesign -> NodeSet2.xml. The committed CSV pins NodeIds; if the
+      # compiler rewrites it, fail the job so the change is reviewed and committed.
+      - name: Compile to NodeSet2 (+ NodeId guard)
+        run: |
+          export PATH="$PATH:$HOME/.dotnet/tools"
+          if [ -f "$IDS_CSV" ]; then
+            Opc.Ua.ModelCompiler compile -d2 "$MODEL_XML" -c "$IDS_CSV" -o2 out/ -version "$MC_VERSION"
+            if ! git diff --exit-code -- "$IDS_CSV"; then
+              echo "::error::NodeId CSV changed. Review and commit $IDS_CSV deliberately (run 'task bootstrap-ids' locally)."
+              exit 1
+            fi
+          else
+            echo "::warning::No committed $IDS_CSV. Generating one now; commit it to lock NodeIds across builds."
+            Opc.Ua.ModelCompiler compile -d2 "$MODEL_XML" -cg "$IDS_CSV" -o2 out/ -version "$MC_VERSION"
+          fi
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nodeset2
+          path: |
+            out/*.NodeSet2.xml
+            out/*.csv
+          if-no-files-found: warn
+
+  ui:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: ui/package-lock.json
+      - uses: arduino/setup-task@v2
+        with:
+          version: 3.x
+      - name: Typecheck + test the UI
+        run: task ui-test
+
+  binary:
+    runs-on: ubuntu-latest
+    needs: [ui]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: ui/package-lock.json
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.26'
+      - uses: arduino/setup-task@v2
+        with:
+          version: 3.x
+      - name: Build the SPA-embedded binary
+        run: task build-web

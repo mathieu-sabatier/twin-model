@@ -1,0 +1,25 @@
+classDiagram
+  class EquipmentType {
+    +String Manufacturer
+    +String SerialNumber
+    +EquipmentState State
+    +UInt32 CycleCount
+  }
+  class HeatingZoneType {
+    +Double Temperature
+    +Double PowerLevel
+    +Double Setpoint
+  }
+  class FurnaceType {
+    +Boolean DoorClosed
+    +OpcUa:FolderType Zones
+    +method StartProgram
+  }
+  class PressType {
+    +Double Force
+    +Double RamPosition
+    +Double MaxForce
+    +method EmergencyStop
+  }
+  EquipmentType <|-- FurnaceType
+  EquipmentType <|-- PressType

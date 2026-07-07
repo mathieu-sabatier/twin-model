@@ -1,0 +1,34 @@
+# line.yaml — packaging-line filler modeled the canonical OPC UA for Machinery way.
+#
+# Machinery is COMPOSITION-based, not inheritance-based: there is no "MachineType"
+# to subclass. You subtype a real base (here DI:DeviceType, giving SerialNumber /
+# Manufacturer / Model / DeviceHealth) and ADD Machinery building blocks as
+# `kind: object` members (Identification, Monitoring). Your own telemetry sits
+# alongside. `twinmodel catalog show DI:DeviceType` lists what you inherit;
+# `twinmodel catalog types Machinery` lists the building blocks you can add.
+
+model:
+  name: AcmeLine
+  namespace: https://acme.example/UA/Line/
+  prefix: Acme.Line
+  version: 1.0.0
+  publication_date: 2026-07-05
+
+imports:
+  OpcUa: http://opcfoundation.org/UA/
+  DI: http://opcfoundation.org/UA/DI/
+  Machinery: http://opcfoundation.org/UA/Machinery/   # transitively pulls IA
+
+object_types:
+  FillerType:
+    doc: Rotary filler — a DI Device augmented with Machinery building blocks
+    base: DI:DeviceType
+    members:
+      Identification: { kind: object, type: Machinery:MachineIdentificationType }
+      Monitoring:     { kind: object, type: Machinery:MonitoringType }
+      FillVolume:     { type: Double, unit: "ml" }              # our custom telemetry
+      Setpoint:       { type: Double, unit: "ml", access: rw }
+      NozzleCount:    { kind: property, type: UInt32 }
+
+instances:
+  Filler1: { type: FillerType, under: OpcUa:ObjectsFolder }

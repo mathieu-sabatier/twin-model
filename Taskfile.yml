@@ -1,0 +1,142 @@
+# Taskfile for twinmodel — build the CLI, transpile the model, and compile it with
+# the official UA-ModelCompiler .NET tool.  Install go-task: https://taskfile.dev
+version: '3'
+
+vars:
+  BIN: build/twinmodel
+  IN: examples
+  OUT: out
+  I3X_OUT: examples/i3x # committed i3X goldens (regenerate with `task export-i3x`)
+  MODEL_XML: out/Equipment.ModelDesign.xml
+  IDS_CSV: examples/Equipment.ModelDesign.csv # committed NodeId source of truth
+  MC: Opc.Ua.ModelCompiler
+  MC_VERSION: v105
+  MC_IMAGE: ua-modelcompiler:local
+  MC_REPO_DIR: '{{.MC_REPO_DIR | default "/tmp/UA-ModelCompiler"}}'
+
+tasks:
+  default:
+    desc: Run checks then transpile the example model
+    deps: [check]
+    cmds:
+      - task: build-model
+
+  build:
+    desc: Build the twinmodel binary (embeds whatever is in internal/web/dist)
+    cmds:
+      - go build -o {{.BIN}} ./cmd/twinmodel
+
+  ui-dev:
+    desc: 'Run the SPA dev server (:3000), proxying /api to a backend you start separately, e.g. GIT_REPO=<local-path-or-url> twinmodel serve. Override the proxy with NUXT_DEV_API_TARGET.'
+    dir: ui
+    cmds:
+      - npm run dev
+
+  ui-generate:
+    desc: Build the SPA (nuxi generate) into the Go embed dir internal/web/dist
+    dir: ui
+    cmds:
+      - npm ci
+      - npm run generate
+      # Swap in the fresh SSG bundle, preserving the committed .gitignore.
+      - find ../internal/web/dist -mindepth 1 -not -name .gitignore -delete
+      - cp -R .output/public/. ../internal/web/dist/
+
+  build-web:
+    desc: Full production build — generate the SPA, then build the single self-contained binary (serves / and /api)
+    deps: [ui-generate]
+    cmds:
+      - go build -o {{.BIN}} ./cmd/twinmodel
+
+  test:
+    desc: Run the Go test suite
+    cmds:
+      - go test ./...
+
+  vet:
+    desc: Run go vet
+    cmds:
+      - go vet ./...
+
+  check:
+    desc: Vet + test (everything CI runs before the ModelCompiler)
+    deps: [vet, test]
+
+  lint-model:
+    desc: Semantic lint of the DSL
+    deps: [build]
+    cmds:
+      - ./{{.BIN}} lint -i {{.IN}}
+
+  build-model:
+    desc: Transpile *.yaml to *.ModelDesign.xml
+    deps: [build]
+    cmds:
+      - ./{{.BIN}} build -i {{.IN}} -o {{.OUT}}
+
+  export-i3x:
+    desc: Export the model to CESMII i3X 1.0 JSON (regenerates examples/i3x/)
+    deps: [build]
+    cmds:
+      - ./{{.BIN}} export --format i3x -i {{.IN}} -o {{.I3X_OUT}}
+
+  bootstrap-ids:
+    desc: One-time — generate the NodeId CSV, then commit it (NodeIds must be stable)
+    deps: [build]
+    cmds:
+      # No CSV yet -> twinmodel passes -cg, so the compiler writes it to {{.IDS_CSV}}.
+      - ./{{.BIN}} compile -i {{.IN}} -o {{.OUT}} --ids {{.IDS_CSV}} --version {{.MC_VERSION}}
+      - 'echo ">> Generated {{.IDS_CSV}} — review and git add it."'
+
+  compile:
+    desc: Transpile + compile the model to NodeSet2 via twinmodel (orchestrates the ModelCompiler)
+    deps: [build]
+    preconditions:
+      - sh: test -f {{.IDS_CSV}}
+        msg: "Missing {{.IDS_CSV}} — run 'task bootstrap-ids' once and commit it."
+    cmds:
+      - ./{{.BIN}} compile -i {{.IN}} -o {{.OUT}} --ids {{.IDS_CSV}} --version {{.MC_VERSION}}
+
+  compile-di:
+    desc: Compile the DI-based example end-to-end via the ModelCompiler Docker image (demonstrates companion-spec -d2 wiring)
+    deps: [build, modelcompiler-image]
+    cmds:
+      # --docker-image mounts -o at /work; the NodeId CSV is bootstrapped there (-cg) each run.
+      - ./{{.BIN}} compile -i examples/di -o out/di --docker-image {{.MC_IMAGE}} --version {{.MC_VERSION}}
+
+  modelcompiler-image:
+    desc: Build the UA-ModelCompiler Docker image from source (no public image is published)
+    status:
+      - docker image inspect {{.MC_IMAGE}} >/dev/null 2>&1
+    cmds:
+      - test -d {{.MC_REPO_DIR}} || git clone --depth 1 https://github.com/OPCFoundation/UA-ModelCompiler.git {{.MC_REPO_DIR}}
+      - docker build -t {{.MC_IMAGE}} {{.MC_REPO_DIR}}
+
+  compile-docker:
+    desc: Compile ModelDesign -> NodeSet2 via the UA-ModelCompiler Docker image
+    deps: [build-model, modelcompiler-image]
+    cmds:
+      # -cg bootstraps the CSV the first time; -c uses the committed one after that.
+      - |
+        FLAG=-cg; [ -f "{{.IDS_CSV}}" ] && FLAG=-c
+        docker run --rm --user "$(id -u):$(id -g)" -e HOME=/tmp \
+          -v "$PWD:/work" -w /work {{.MC_IMAGE}} \
+          compile -d2 {{.MODEL_XML}} $FLAG {{.IDS_CSV}} -o2 {{.OUT}} -version {{.MC_VERSION}}
+
+  ui-test:
+    desc: Typecheck + unit-test the UI
+    dir: ui
+    cmds:
+      - npm ci
+      - npm run typecheck
+      - npm run test
+
+  docker:
+    desc: Build the single self-contained container image (API + embedded SPA)
+    cmds:
+      - docker build -t twinmodel:local .
+
+  clean:
+    desc: Remove build output
+    cmds:
+      - rm -rf {{.OUT}} {{.BIN}}

@@ -1,0 +1,10 @@
+[
+  {
+    "uri": "https://acme.example/UA/Equipment/",
+    "displayName": "AcmeEquipment"
+  },
+  {
+    "uri": "http://opcfoundation.org/UA/",
+    "displayName": "OPC UA"
+  }
+]
