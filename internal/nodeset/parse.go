@@ -164,7 +164,7 @@ func Parse(r io.Reader) (*NodeSet, error) {
 	for _, m := range raw.Models {
 		mm := Model{ModelURI: m.ModelURI, Version: m.Version, PublicationDate: m.PublicationDate}
 		for _, rm := range m.RequiredModels {
-			mm.RequiredModels = append(mm.RequiredModels, RequiredModel{ModelURI: rm.ModelURI, Version: rm.Version, PublicationDate: rm.PublicationDate})
+			mm.RequiredModels = append(mm.RequiredModels, RequiredModel(rm))
 		}
 		ns.Models = append(ns.Models, mm)
 	}

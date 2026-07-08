@@ -1,0 +1,21 @@
+# golangci-lint v2 configuration. Run locally with `task lint-go`;
+# CI runs the same via .github/workflows/lint.yml.
+version: "2"
+
+linters:
+  # `standard` = errcheck, govet, ineffassign, staticcheck, unused.
+  default: standard
+  exclusions:
+    # Built-in preset for idiomatic false positives — notably unchecked errors
+    # on deferred *.Close()/*.Flush()/fmt.Print* calls.
+    presets:
+      - std-error-handling
+    rules:
+      # Tests routinely ignore Close/Encode errors on throwaway resources.
+      - path: _test\.go
+        linters:
+          - errcheck
+
+formatters:
+  enable:
+    - gofmt

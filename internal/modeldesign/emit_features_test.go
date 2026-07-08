@@ -135,7 +135,7 @@ func TestEmitTwoAdditionalImportsOrdered(t *testing.T) {
 	nDI := strings.Index(out, `<opc:Namespace Name="DI"`)
 	nIA := strings.Index(out, `<opc:Namespace Name="IA"`)
 	nOpc := strings.Index(out, `<opc:Namespace Name="OpcUa"`)
-	if !(nDI >= 0 && nDI < nIA && nIA < nOpc) {
+	if nDI < 0 || nDI >= nIA || nIA >= nOpc {
 		t.Errorf("namespace table order wrong: DI=%d IA=%d OpcUa=%d", nDI, nIA, nOpc)
 	}
 }

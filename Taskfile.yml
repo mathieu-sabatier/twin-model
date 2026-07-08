@@ -58,6 +58,11 @@ tasks:
     cmds:
       - go vet ./...
 
+  lint-go:
+    desc: Run golangci-lint (same config CI runs; install https://golangci-lint.run)
+    cmds:
+      - golangci-lint run ./...
+
   check:
     desc: Vet + test (everything CI runs before the ModelCompiler)
     deps: [vet, test]
