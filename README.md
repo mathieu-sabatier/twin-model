@@ -425,14 +425,31 @@ GitHub PR base must be a branch); tags and raw commit SHAs are not resolved.
 
 `twinmodel mcp` exposes the modeling operations as Model Context Protocol tools,
 so an AI assistant can read parsed models, browse the bundled companion-spec
-catalog, validate/preview drafts, and open pull requests — the same reach as the
-web editor. It shares `serve`'s configuration (`GIT_REPO`, `GIT_TOKEN`, …).
+catalog, edit drafts with structured patches, validate/preview them, and open
+pull requests — the same reach as the web editor. It shares `serve`'s
+configuration (`GIT_REPO`, `GIT_TOKEN`, …).
 
-Tools: `get_model`, `list_model_files`, `parse_model`, `preview_modeldesign`,
-`preview_diagram`, `resolve_type`, `list_namespaces`, `list_types`,
-`get_type_details`, `search_types`, `find_unit`, `get_schema`, `repo_info`,
-`list_prs`, `list_branches`, `create_draft`, `update_draft`, `draft_diff`,
-`propose_pr`.
+The 29 tools, by area:
+
+- **Read & inspect:** `get_model` (AST), `get_model_source` / `get_draft_source`
+  (raw YAML, for exact round-tripping), `list_model_files`, `parse_model`,
+  `get_schema`, `resolve_type`, `find_unit`, `get_type_details`, `search_types`,
+  `list_namespaces`, `list_types`, `preview_modeldesign`, `preview_diagram`.
+- **Draft editing:** `create_draft`, `update_draft` (whole-file write),
+  `add_import` / `add_type` / `add_instance` and their inverses
+  `remove_import` / `remove_type` / `remove_instance` (additive patches — they
+  splice a single node so untouched content is never rewritten), `draft_diff`
+  (semantic changelist, including import/namespace changes).
+- **Draft lifecycle:** `list_drafts`, `discard_draft` (find and clean up
+  throwaway drafts).
+- **Repo & propose:** `repo_info`, `list_prs`, `list_branches`, `propose_pr`.
+
+**Write semantics.** The patch tools and `update_draft` are strict: a write that
+would leave a file with an error-severity validation diagnostic (e.g. an unknown
+unit, or removing a type an instance still references) is **refused and stores
+nothing**, returning the blocking diagnostics. Pass `force: true` to store anyway
+(e.g. while building forward references), or `dryRun: true` on the `add_*` /
+`remove_*` tools to validate a change in full draft context without storing it.
 
 **stdio (desktop clients).** The client spawns `twinmodel mcp` as a subprocess
 and passes the repo config in its environment. With Claude Code:

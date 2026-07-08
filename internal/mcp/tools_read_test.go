@@ -120,6 +120,11 @@ func TestNewServer_RegistersExpectedReadTools(t *testing.T) {
 		"add_import",
 		"add_type",
 		"add_instance",
+		"remove_type",
+		"remove_instance",
+		"remove_import",
+		"list_drafts",
+		"discard_draft",
 	}
 	for _, name := range want {
 		if !got[name] {

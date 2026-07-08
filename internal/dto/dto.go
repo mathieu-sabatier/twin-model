@@ -199,6 +199,11 @@ type DraftResponse struct {
 	UpdatedAt string   `json:"updatedAt"` // RFC3339
 }
 
+// DraftListResponse enumerates all live drafts for list_drafts.
+type DraftListResponse struct {
+	Drafts []DraftResponse `json:"drafts"`
+}
+
 // CreateDraftResponse is returned by POST /api/drafts.
 type CreateDraftResponse struct {
 	ID      string   `json:"id"`
@@ -550,4 +555,7 @@ func FromCatalogType(alias, uri string, t dsl.CatalogType, baseChain []CatalogTy
 type DraftWriteResponse struct {
 	Files       []string                `json:"files"`
 	Diagnostics map[string][]Diagnostic `json:"diagnostics"`
+	// Stored is false on a dry-run (nothing was written) and true on a real
+	// write, self-documenting the outcome so callers need no per-call branching.
+	Stored bool `json:"stored"`
 }

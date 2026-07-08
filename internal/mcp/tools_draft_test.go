@@ -122,6 +122,51 @@ func TestMCPDraftTools_UpdateAndDiff(t *testing.T) {
 	}
 }
 
+// TestListDraftsTool_ListsDrafts seeds a draft straight into the store (the
+// same pattern used throughout this file) and checks the list_drafts tool
+// surfaces it — the MCP-layer half of the ListDrafts coverage.
+func TestListDraftsTool_ListsDrafts(t *testing.T) {
+	svc := core.New(nil, core.NewStore(time.Hour))
+	d := svc.Store().Create("main", map[string][]byte{"Demo.yaml": []byte(draftBaseYAML)})
+	c, ctx := newClientFor(t, svc)
+
+	res := callTool(t, c, ctx, "list_drafts", nil)
+	text := requireText(t, res)
+	if !strings.Contains(text, d.ID) {
+		t.Errorf("list_drafts result missing draft id %q: %s", d.ID, text)
+	}
+}
+
+// TestDiscardDraftTool_Discards drives discard_draft through the real MCP
+// protocol and confirms the draft is actually gone from the store afterward.
+func TestDiscardDraftTool_Discards(t *testing.T) {
+	svc := core.New(nil, core.NewStore(time.Hour))
+	d := svc.Store().Create("main", map[string][]byte{"Demo.yaml": []byte(draftBaseYAML)})
+	c, ctx := newClientFor(t, svc)
+
+	res := callTool(t, c, ctx, "discard_draft", map[string]any{"draftId": d.ID})
+	if res.IsError {
+		t.Fatalf("unexpected error: %s", requireText(t, res))
+	}
+	if _, ok := svc.Store().Get(d.ID); ok {
+		t.Error("draft still present after discard_draft")
+	}
+}
+
+// TestDiscardDraftTool_Unknown_IsError mirrors the not-found tests elsewhere
+// in this package for discard_draft's unknown-id path.
+func TestDiscardDraftTool_Unknown_IsError(t *testing.T) {
+	c, ctx := newTestClient(t)
+	res := callTool(t, c, ctx, "discard_draft", map[string]any{"draftId": "does-not-exist"})
+	if !res.IsError {
+		t.Fatalf("want tool error for unknown draft, got: %+v", res.Content)
+	}
+	tc, ok := mcp.AsTextContent(res.Content[0])
+	if !ok || !strings.Contains(tc.Text, "not found") {
+		t.Errorf("want a not-found tool error, got: %+v", res.Content)
+	}
+}
+
 // TestUpdateDraft_FilesNotObject_IsToolError exercises the stringMap error path
 // wired into update_draft's handler: a non-object "files" argument must come
 // back as a tool-error result (mcp.NewToolResultError), never a transport error
@@ -306,13 +351,58 @@ func TestUpdateDraft_EchoesDiagnosticsOnSuccess(t *testing.T) {
 	svc := core.New(nil, core.NewStore(time.Hour))
 	d := svc.Store().Create("main", map[string][]byte{"demo.yaml": []byte(patchBaseSrc)})
 	c, ctx := newClientFor(t, svc)
+	// force:true — patchBaseSrc's namespace ("urn:x") lacks the required
+	// trailing slash, an error-severity diagnostic on its own; this test is
+	// about the "diagnostics" field being echoed on success, not strictness.
 	res := callTool(t, c, ctx, "update_draft", map[string]any{
-		"draftId": d.ID, "files": map[string]any{"demo.yaml": patchBaseSrc}})
+		"draftId": d.ID, "force": true, "files": map[string]any{"demo.yaml": patchBaseSrc}})
 	if res.IsError {
 		t.Fatalf("unexpected error: %s", requireText(t, res))
 	}
 	if !strings.Contains(requireText(t, res), "diagnostics") {
 		t.Fatalf("response missing diagnostics field:\n%s", requireText(t, res))
+	}
+}
+
+// mixerErrorYAML is a full model file that parses cleanly but carries exactly
+// one error-severity validation diagnostic (CodeUnknownUnit on
+// MixerType.Weight's "unit: notaunit") — distinct from
+// TestUpdateDraft_RefusesUnparseable, which covers a structural parse failure.
+const mixerErrorYAML = "model:\n  name: Demo\n  namespace: urn:x/\n  version: 1.0.0\n  publication_date: 2026-01-01\n" +
+	"imports:\n  OpcUa: http://opcfoundation.org/UA/\n" +
+	"object_types:\n  MixerType:\n    base: OpcUa:BaseObjectType\n    members:\n      Weight: { type: Double, unit: notaunit }\n"
+
+// TestUpdateDraft_RefusesErrorSeverityValidation covers update_draft's new
+// strict gate: a file that parses fine but carries an error-severity
+// validation diagnostic must be refused without force, and stored with
+// force:true.
+func TestUpdateDraft_RefusesErrorSeverityValidation(t *testing.T) {
+	svc := core.New(nil, core.NewStore(time.Hour))
+	d := svc.Store().Create("main", map[string][]byte{"demo.yaml": []byte(patchBaseSrc)})
+	c, ctx := newClientFor(t, svc)
+
+	res := callTool(t, c, ctx, "update_draft", map[string]any{
+		"draftId": d.ID, "files": map[string]any{"demo.yaml": mixerErrorYAML}})
+	if !res.IsError {
+		t.Fatalf("want refusal for error-severity validation, got: %+v", res.Content)
+	}
+	tc, ok := mcp.AsTextContent(res.Content[0])
+	if !ok || !strings.Contains(tc.Text, "unknown-unit") {
+		t.Fatalf("refusal message = %+v, want it to name the unknown-unit blocker", res.Content)
+	}
+	if string(d.Files["demo.yaml"]) != patchBaseSrc {
+		t.Fatalf("draft was mutated despite refusal:\n%s", d.Files["demo.yaml"])
+	}
+
+	res = callTool(t, c, ctx, "update_draft", map[string]any{
+		"draftId": d.ID, "force": true, "files": map[string]any{"demo.yaml": mixerErrorYAML}})
+	if res.IsError {
+		t.Fatalf("force:true should store despite error-severity diagnostics: %s", requireText(t, res))
+	}
+	// UpdateDraft canonicalizes on write (see core.canonicalize), so compare on
+	// the substring rather than byte-for-byte equality.
+	if !strings.Contains(string(d.Files["demo.yaml"]), "MixerType:") {
+		t.Fatalf("draft not stored with force:true:\n%s", d.Files["demo.yaml"])
 	}
 }
 

@@ -360,6 +360,27 @@ func (s *Service) DraftMeta(id string) (dto.DraftResponse, error) {
 	}, nil
 }
 
+// ListDrafts returns metadata for every live draft (for cleanup / orphan discovery).
+func (s *Service) ListDrafts() dto.DraftListResponse {
+	infos := s.store.List()
+	drafts := make([]dto.DraftResponse, 0, len(infos))
+	for _, di := range infos {
+		drafts = append(drafts, dto.DraftResponse{
+			ID: di.ID, BaseRef: di.BaseRef, Files: di.Files,
+			UpdatedAt: di.UpdatedAt.UTC().Format(time.RFC3339),
+		})
+	}
+	return dto.DraftListResponse{Drafts: drafts}
+}
+
+// DiscardDraft deletes a draft by id; ErrNotFound if unknown.
+func (s *Service) DiscardDraft(id string) error {
+	if !s.store.Discard(id) {
+		return fmt.Errorf("%w: draft not found", ErrNotFound)
+	}
+	return nil
+}
+
 // UpdateDraft updates draft files, canonicalizing each parseable file via
 // dsl.Format and keeping raw bytes for any file that does not parse.
 func (s *Service) UpdateDraft(id string, files map[string]string) (dto.FilesResponse, error) {

@@ -2,6 +2,7 @@ package core
 
 import (
 	"regexp"
+	"sort"
 	"testing"
 	"time"
 )
@@ -62,5 +63,57 @@ func TestStoreIDsUnique(t *testing.T) {
 			t.Fatalf("duplicate id %q", id)
 		}
 		seen[id] = true
+	}
+}
+
+func TestStore_List_ReturnsAllSortedByID(t *testing.T) {
+	s := NewStore(time.Hour)
+	d1 := s.Create("main", map[string][]byte{"b.yaml": []byte("1"), "a.yaml": []byte("2")})
+	d2 := s.Create("dev", map[string][]byte{"c.yaml": []byte("3")})
+
+	got := s.List()
+	if len(got) != 2 {
+		t.Fatalf("List() returned %d drafts, want 2: %+v", len(got), got)
+	}
+	// sorted by ID for determinism
+	ids := []string{d1.ID, d2.ID}
+	sort.Strings(ids)
+	if got[0].ID != ids[0] || got[1].ID != ids[1] {
+		t.Fatalf("List() ids = [%s, %s], want sorted %v", got[0].ID, got[1].ID, ids)
+	}
+	for _, di := range got {
+		switch di.ID {
+		case d1.ID:
+			if di.BaseRef != "main" {
+				t.Errorf("d1 BaseRef = %q, want main", di.BaseRef)
+			}
+			if len(di.Files) != 2 || di.Files[0] != "a.yaml" || di.Files[1] != "b.yaml" {
+				t.Errorf("d1 Files = %v, want sorted [a.yaml b.yaml]", di.Files)
+			}
+		case d2.ID:
+			if di.BaseRef != "dev" {
+				t.Errorf("d2 BaseRef = %q, want dev", di.BaseRef)
+			}
+			if len(di.Files) != 1 || di.Files[0] != "c.yaml" {
+				t.Errorf("d2 Files = %v, want [c.yaml]", di.Files)
+			}
+		default:
+			t.Errorf("unexpected draft id %q in List()", di.ID)
+		}
+	}
+}
+
+func TestStore_Discard_RemovesAndReportsExistence(t *testing.T) {
+	s := NewStore(time.Hour)
+	d := s.Create("main", map[string][]byte{"a.yaml": []byte("1")})
+
+	if ok := s.Discard(d.ID); !ok {
+		t.Fatal("Discard(existing) = false, want true")
+	}
+	if _, ok := s.Get(d.ID); ok {
+		t.Error("draft still present after Discard")
+	}
+	if ok := s.Discard("does-not-exist"); ok {
+		t.Error("Discard(unknown) = true, want false")
 	}
 }

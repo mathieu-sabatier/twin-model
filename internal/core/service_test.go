@@ -72,3 +72,54 @@ func TestReadModelSource_MissingFile_IsNotFound(t *testing.T) {
 		t.Fatalf("err = %v, want ErrNotFound", err)
 	}
 }
+
+func TestListDrafts_ReturnsAll(t *testing.T) {
+	s := New(nil, NewStore(time.Hour))
+	d1 := s.Store().Create("main", map[string][]byte{"a.yaml": []byte("1")})
+	d2 := s.Store().Create("dev", map[string][]byte{"b.yaml": []byte("2")})
+
+	resp := s.ListDrafts()
+	if len(resp.Drafts) != 2 {
+		t.Fatalf("ListDrafts() returned %d drafts, want 2: %+v", len(resp.Drafts), resp.Drafts)
+	}
+	byID := map[string]dto.DraftResponse{}
+	for _, dr := range resp.Drafts {
+		byID[dr.ID] = dr
+	}
+	dr1, ok := byID[d1.ID]
+	if !ok {
+		t.Fatalf("ListDrafts() missing d1 %q", d1.ID)
+	}
+	if dr1.BaseRef != "main" || len(dr1.Files) != 1 || dr1.Files[0] != "a.yaml" {
+		t.Errorf("d1 mapped wrong: %+v", dr1)
+	}
+	if _, err := time.Parse(time.RFC3339, dr1.UpdatedAt); err != nil {
+		t.Errorf("d1 UpdatedAt = %q, want RFC3339: %v", dr1.UpdatedAt, err)
+	}
+	dr2, ok := byID[d2.ID]
+	if !ok {
+		t.Fatalf("ListDrafts() missing d2 %q", d2.ID)
+	}
+	if dr2.BaseRef != "dev" || len(dr2.Files) != 1 || dr2.Files[0] != "b.yaml" {
+		t.Errorf("d2 mapped wrong: %+v", dr2)
+	}
+}
+
+func TestDiscardDraft_Unknown_IsNotFound(t *testing.T) {
+	s := New(nil, NewStore(time.Hour))
+	if err := s.DiscardDraft("does-not-exist"); !errors.Is(err, ErrNotFound) {
+		t.Fatalf("err = %v, want ErrNotFound", err)
+	}
+}
+
+func TestDiscardDraft_RemovesDraft(t *testing.T) {
+	s := New(nil, NewStore(time.Hour))
+	d := s.Store().Create("main", map[string][]byte{"a.yaml": []byte("1")})
+
+	if err := s.DiscardDraft(d.ID); err != nil {
+		t.Fatalf("DiscardDraft: %v", err)
+	}
+	if _, ok := s.Store().Get(d.ID); ok {
+		t.Error("draft still present after DiscardDraft")
+	}
+}

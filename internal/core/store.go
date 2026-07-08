@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/hex"
+	"sort"
 	"sync"
 	"time"
 )
@@ -67,6 +68,37 @@ func (s *Store) Update(id string, fn func(*Draft)) (*Draft, bool) {
 	fn(d)
 	d.UpdatedAt = s.now()
 	return d, true
+}
+
+// DraftInfo is a race-free scalar snapshot of a draft for listing.
+type DraftInfo struct {
+	ID        string
+	BaseRef   string
+	Files     []string // sorted file names
+	UpdatedAt time.Time
+}
+
+// List returns a snapshot of all live drafts, sorted by ID for determinism.
+func (s *Store) List() []DraftInfo {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	out := make([]DraftInfo, 0, len(s.m))
+	for _, d := range s.m {
+		out = append(out, DraftInfo{ID: d.ID, BaseRef: d.BaseRef, Files: sortedKeys(d.Files), UpdatedAt: d.UpdatedAt})
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].ID < out[j].ID })
+	return out
+}
+
+// Discard removes the draft for id, returning whether it existed.
+func (s *Store) Discard(id string) bool {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if _, ok := s.m[id]; !ok {
+		return false
+	}
+	delete(s.m, id)
+	return true
 }
 
 // Sweep evicts drafts idle longer than the TTL.
