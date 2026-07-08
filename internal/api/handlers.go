@@ -31,6 +31,8 @@ func writeErr(w http.ResponseWriter, err error) {
 		httpErr(w, http.StatusBadGateway, msg(err, core.ErrReadTree))
 	case errors.Is(err, core.ErrInternal):
 		httpErr(w, http.StatusInternalServerError, msg(err, core.ErrInternal))
+	case errors.Is(err, core.ErrConflict):
+		httpErr(w, http.StatusConflict, msg(err, core.ErrConflict))
 	default:
 		httpErr(w, http.StatusBadGateway, err.Error())
 	}
@@ -208,7 +210,7 @@ func (s *Server) handlePropose(w http.ResponseWriter, r *http.Request) {
 	// core.Service.Propose as if it were valid. Zero both fields on any decode
 	// error so Propose's existing draft-lookup(404)-then-branch/title(400)
 	// ordering still yields the original 400 for a known draft, and 404 for an
-	// unknown one — see Task 3 review Finding 2.
+	// unknown one.
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		req.Branch, req.Title = "", ""
 	}

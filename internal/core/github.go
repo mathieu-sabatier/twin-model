@@ -44,7 +44,7 @@ const (
 	commitAuthorEmail = "bot@twinmodel"
 
 	// CommitAuthorName/CommitAuthorEmail are exported for the transitional
-	// internal/api forwarders (Task 2→3); see commitAuthorName/commitAuthorEmail.
+	// internal/api forwarders; see commitAuthorName/commitAuthorEmail.
 	CommitAuthorName  = commitAuthorName
 	CommitAuthorEmail = commitAuthorEmail
 )

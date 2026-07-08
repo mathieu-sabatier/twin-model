@@ -543,3 +543,11 @@ func FromCatalogType(alias, uri string, t dsl.CatalogType, baseChain []CatalogTy
 		Abstract: t.Abstract, BaseChain: baseChain, Members: FromCatalogMembers(t.Members, aliasFor),
 	}
 }
+
+// DraftWriteResponse is returned by the additive patch operations: the draft's
+// file list plus per-file validation diagnostics, so the caller sees lint state
+// without a separate validate call.
+type DraftWriteResponse struct {
+	Files       []string                `json:"files"`
+	Diagnostics map[string][]Diagnostic `json:"diagnostics"`
+}

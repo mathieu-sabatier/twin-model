@@ -17,7 +17,7 @@ type Spec struct {
 }
 
 // registry is the curated set of bundled companion specs. Adding one is a row
-// here plus committing the file under specs/ (Task 7).
+// here plus committing the file under specs/.
 var registry = []Spec{
 	// Base layer
 	{URI: "http://opcfoundation.org/UA/DI/", File: "Opc.Ua.Di.NodeSet2.xml", Prefix: "Opc.Ua.DI", Alias: "DI"},

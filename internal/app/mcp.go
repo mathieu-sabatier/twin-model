@@ -13,7 +13,7 @@ import (
 )
 
 // MCPServerModule provides the *mcpserver.MCPServer built over the shared
-// core.Service. Both the stdio app and the /mcp mount (Task 9) consume it.
+// core.Service. Both the stdio app and the /mcp mount consume it.
 func MCPServerModule() fx.Option {
 	return fx.Module("mcp-server", fx.Provide(func(svc *core.Service) *mcpserver.MCPServer { return mcp.NewServer(svc) }))
 }

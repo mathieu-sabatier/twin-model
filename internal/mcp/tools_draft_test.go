@@ -76,7 +76,7 @@ func TestDraftLoop_CreateUpdateDiff(t *testing.T) {
 // TestDraftLoop_CreateUpdateDiff, but through the real MCP protocol
 // (update_draft then draft_diff via an in-process client) on a draft seeded
 // straight into the store — create_draft itself needs a real git host
-// (ReadTree), which is Task 9's integration test, but update_draft/draft_diff
+// (ReadTree) but update_draft/draft_diff
 // only need an existing draft id, so they're fully exercisable here. draft_diff
 // is called with no "file" argument, exercising the documented "defaults to the
 // first file" behavior at the same time.
@@ -284,6 +284,46 @@ func TestProposePR_EmptyBranchOrTitle_IsPlainInvalidError(t *testing.T) {
 	}
 	if strings.Contains(tc.Text, "pushing to the remote failed") || strings.Contains(tc.Text, "may have been created locally") {
 		t.Errorf("propose_pr error = %q, must NOT be the PR-failure message — Propose never reached the host for empty branch/title", tc.Text)
+	}
+}
+
+func TestUpdateDraft_RefusesUnparseable(t *testing.T) {
+	svc := core.New(nil, core.NewStore(time.Hour))
+	d := svc.Store().Create("main", map[string][]byte{"demo.yaml": []byte(patchBaseSrc)})
+	c, ctx := newClientFor(t, svc)
+	res := callTool(t, c, ctx, "update_draft", map[string]any{
+		"draftId": d.ID, "files": map[string]any{"demo.yaml": "model: [unterminated"}})
+	if !res.IsError {
+		t.Fatal("expected a tool error refusing the unparseable write")
+	}
+	// The original content must be untouched (nothing stored).
+	if string(d.Files["demo.yaml"]) != patchBaseSrc {
+		t.Fatalf("draft was mutated despite refusal:\n%s", d.Files["demo.yaml"])
+	}
+}
+
+func TestUpdateDraft_EchoesDiagnosticsOnSuccess(t *testing.T) {
+	svc := core.New(nil, core.NewStore(time.Hour))
+	d := svc.Store().Create("main", map[string][]byte{"demo.yaml": []byte(patchBaseSrc)})
+	c, ctx := newClientFor(t, svc)
+	res := callTool(t, c, ctx, "update_draft", map[string]any{
+		"draftId": d.ID, "files": map[string]any{"demo.yaml": patchBaseSrc}})
+	if res.IsError {
+		t.Fatalf("unexpected error: %s", requireText(t, res))
+	}
+	if !strings.Contains(requireText(t, res), "diagnostics") {
+		t.Fatalf("response missing diagnostics field:\n%s", requireText(t, res))
+	}
+}
+
+func TestUpdateDraft_ForceStoresUnparseable(t *testing.T) {
+	svc := core.New(nil, core.NewStore(time.Hour))
+	d := svc.Store().Create("main", map[string][]byte{"demo.yaml": []byte(patchBaseSrc)})
+	c, ctx := newClientFor(t, svc)
+	res := callTool(t, c, ctx, "update_draft", map[string]any{
+		"draftId": d.ID, "force": true, "files": map[string]any{"demo.yaml": "model: [unterminated"}})
+	if res.IsError {
+		t.Fatalf("force write should not error: %s", requireText(t, res))
 	}
 }
 

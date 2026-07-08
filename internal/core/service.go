@@ -107,6 +107,24 @@ func (s *Service) ReadModel(ctx context.Context, ref, file string) (dto.ModelRes
 	return s.parseModelResponse(path, data), nil
 }
 
+// ReadModelSource returns the raw YAML bytes of a model file at a committed ref
+// — the exact source text, for a caller that needs to round-trip it rather than
+// reconstruct it from the AST.
+func (s *Service) ReadModelSource(ctx context.Context, ref, file string) ([]byte, error) {
+	if ref == "" {
+		return nil, fmt.Errorf("%w: ref is required", ErrInvalid)
+	}
+	tree, err := s.host.ReadTree(ctx, ref)
+	if err != nil {
+		return nil, fmt.Errorf("%w: %s", ErrReadTree, err.Error())
+	}
+	_, data, ok := selectFile(modelFilesOnly(tree), file)
+	if !ok {
+		return nil, fmt.Errorf("%w: file in ref", ErrNotFound)
+	}
+	return data, nil
+}
+
 // ListModelFiles lists the model-file paths at a committed ref.
 func (s *Service) ListModelFiles(ctx context.Context, ref string) ([]string, error) {
 	if ref == "" {

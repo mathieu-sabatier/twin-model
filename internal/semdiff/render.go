@@ -44,6 +44,14 @@ func render(c Change) string {
 		return fmt.Sprintf("%s: removed child %s", c.Instance, c.Child)
 	case InstanceChanged:
 		return fmt.Sprintf("%s: %s %s → %s", c.Instance, c.Field, orDash(c.Old), orDash(c.New))
+	case ImportAdded:
+		return fmt.Sprintf("+ import %s: %s", c.Field, c.New)
+	case ImportRemoved:
+		return fmt.Sprintf("- import %s: %s", c.Field, c.Old)
+	case NamespaceChanged:
+		return fmt.Sprintf("namespace %s → %s", orDash(c.Old), orDash(c.New))
+	case VersionChanged:
+		return fmt.Sprintf("version %s → %s", orDash(c.Old), orDash(c.New))
 	default:
 		return string(c.Kind)
 	}

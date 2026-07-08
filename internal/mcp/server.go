@@ -14,6 +14,6 @@ import (
 func NewServer(c *core.Service) *server.MCPServer {
 	s := server.NewMCPServer("twinmodel", "0.1.0", server.WithToolCapabilities(true))
 	registerReadTools(s, c)
-	registerDraftTools(s, c) // added in Task 7
+	registerDraftTools(s, c)
 	return s
 }

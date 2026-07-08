@@ -160,6 +160,37 @@ func TestDiffEnum_DocChange(t *testing.T) {
 	}
 }
 
+func TestDiff_ReportsImportAdded(t *testing.T) {
+	base := &dsl.Model{Namespace: "urn:x", Version: "1.0.0"}
+	draft := &dsl.Model{Namespace: "urn:x", Version: "1.0.0",
+		Imports: []dsl.Import{{Alias: "DI", URI: "http://opcfoundation.org/UA/DI/"}}}
+	changes := Diff(base, draft)
+	var found bool
+	for _, c := range changes {
+		if c.Kind == ImportAdded && c.Field == "DI" {
+			found = true
+			if c.Text == "" {
+				t.Error("ImportAdded change has empty Text")
+			}
+		}
+	}
+	if !found {
+		t.Fatalf("no ImportAdded change in %+v", changes)
+	}
+}
+
+func TestDiff_ReportsVersionChanged(t *testing.T) {
+	base := &dsl.Model{Version: "1.0.0"}
+	draft := &dsl.Model{Version: "1.0.1"}
+	changes := Diff(base, draft)
+	for _, c := range changes {
+		if c.Kind == VersionChanged {
+			return
+		}
+	}
+	t.Fatalf("no VersionChanged change in %+v", changes)
+}
+
 func TestDiffTypeAndValueChanges(t *testing.T) {
 	draft := "model: { name: M, namespace: https://x/, version: 1.0.0, publication_date: 2026-07-02 }\n" +
 		"imports: { OpcUa: http://opcfoundation.org/UA/ }\n" +

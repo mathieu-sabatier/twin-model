@@ -10,7 +10,7 @@ import (
 	"github.com/mathieu-sabatier/twin-model/internal/dsl"
 )
 
-// This file locks the two Task 3 review findings down at the HTTP boundary:
+// This file locks the two review findings down at the HTTP boundary:
 //
 //   - Finding 1: the adapter's msg() helper used to strip everything up to the
 //     first ": " in the wrapped error, which mangled any Service detail that

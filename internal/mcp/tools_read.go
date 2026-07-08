@@ -32,8 +32,7 @@ func toolErr(err error) (*mcp.CallToolResult, error) {
 }
 
 // registerReadTools registers the tier-1 tools: parsed data, companion-spec
-// catalog lookups, and previews. None of these mutate server state (drafts are
-// Task 7's registerDraftTools).
+// catalog lookups, and previews. None of these mutate server state
 func registerReadTools(s *server.MCPServer, c *core.Service) {
 	s.AddTool(mcp.NewTool("get_schema",
 		mcp.WithDescription("Return the twinmodel DSL JSON Schema.")),
@@ -59,6 +58,30 @@ func registerReadTools(s *server.MCPServer, c *core.Service) {
 				return toolErr(err)
 			}
 			return jsonResult(resp)
+		})
+
+	s.AddTool(mcp.NewTool("get_model_source",
+		mcp.WithDescription("Return the raw YAML source text of a model file at a committed branch ref — the exact bytes to edit and write back (unlike get_model, which returns the AST). Reach for this before editing an existing model."),
+		mcp.WithString("ref", mcp.Required(), mcp.Description("branch name")),
+		mcp.WithString("file", mcp.Description("model file path or basename; defaults to the first model file"))),
+		func(ctx context.Context, r mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+			data, err := c.ReadModelSource(ctx, r.GetString("ref", ""), r.GetString("file", ""))
+			if err != nil {
+				return toolErr(err)
+			}
+			return mcp.NewToolResultText(string(data)), nil
+		})
+
+	s.AddTool(mcp.NewTool("get_draft_source",
+		mcp.WithDescription("Return the raw canonical YAML source of a file in a draft (server-side read-back). Use it to fetch the current draft text before a whole-file update_draft, so you never reconstruct and drop fields."),
+		mcp.WithString("draftId", mcp.Required()),
+		mcp.WithString("file", mcp.Description("file path or basename; defaults to the first file"))),
+		func(_ context.Context, r mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+			data, err := c.DraftFileRaw(r.GetString("draftId", ""), r.GetString("file", ""))
+			if err != nil {
+				return toolErr(err)
+			}
+			return mcp.NewToolResultText(string(data)), nil
 		})
 
 	s.AddTool(mcp.NewTool("list_model_files",

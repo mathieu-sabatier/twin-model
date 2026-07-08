@@ -31,7 +31,7 @@ object_types:
 
 // newTestClient builds an MCP server over a host-less core.Service — fine for the
 // stateless/catalog tools exercised here; get_model/list_model_files need a real
-// git host and are covered by Task 9's mounted-/mcp integration test — and
+// git host and are covered by mounted-/mcp integration test — and
 // connects an in-process client to it. This drives the real MCP protocol
 // (initialize, tools/list, tools/call) rather than calling core directly, so the
 // tool registrations (names, argument wiring, result encoding) are what's under
@@ -111,12 +111,15 @@ func TestNewServer_RegistersExpectedReadTools(t *testing.T) {
 		got[tool.Name] = true
 	}
 	want := []string{
-		"get_schema", "parse_model", "get_model", "list_model_files",
+		"get_schema", "parse_model", "get_model", "get_model_source", "list_model_files",
 		"preview_modeldesign", "preview_diagram", "resolve_type", "find_unit",
 		"list_namespaces", "list_types", "get_type_details", "search_types",
-		// registerDraftTools (Task 7): stateful/git-backed tier.
+		"get_draft_source",
 		"repo_info", "list_prs", "list_branches", "create_draft", "update_draft",
 		"draft_diff", "propose_pr",
+		"add_import",
+		"add_type",
+		"add_instance",
 	}
 	for _, name := range want {
 		if !got[name] {

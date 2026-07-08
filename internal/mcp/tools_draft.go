@@ -3,11 +3,14 @@ package mcp
 import (
 	"context"
 	"errors"
+	"sort"
+	"strings"
 
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
 
 	"github.com/mathieu-sabatier/twin-model/internal/core"
+	"github.com/mathieu-sabatier/twin-model/internal/dto"
 )
 
 // registerDraftTools registers the tier-2 tools: the git-backed draft lifecycle
@@ -53,19 +56,34 @@ func registerDraftTools(s *server.MCPServer, c *core.Service) {
 		})
 
 	s.AddTool(mcp.NewTool("update_draft",
-		mcp.WithDescription("Write model files into a draft (server canonicalizes each parseable file). files is a map of filename->YAML."),
+		mcp.WithDescription("Write model files into a draft. Refuses (stores nothing) if any file fails to parse, returning the parse errors; on success returns the stored file list plus per-file validation diagnostics. Pass force:true to store unparseable content anyway. files is a map of filename -> YAML."),
 		mcp.WithString("draftId", mcp.Required()),
-		mcp.WithObject("files", mcp.Required(), mcp.Description("map of filename to YAML content"))),
+		mcp.WithObject("files", mcp.Required(), mcp.Description("map of filename to YAML content")),
+		mcp.WithBoolean("force", mcp.Description("store even if a file fails to parse (default false)"))),
 		func(_ context.Context, r mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 			files, err := stringMap(r, "files")
 			if err != nil {
 				return mcp.NewToolResultError(err.Error()), nil
 			}
+			force := r.GetBool("force", false)
+			diags := make(map[string][]dto.Diagnostic, len(files))
+			var parseErrs []string
+			for name, content := range files {
+				pr := c.ParseModel(name, []byte(content))
+				if pr.ParseError != "" {
+					parseErrs = append(parseErrs, name+": "+pr.ParseError)
+				}
+				diags[name] = pr.Diagnostics
+			}
+			if len(parseErrs) > 0 && !force {
+				sort.Strings(parseErrs)
+				return mcp.NewToolResultError("update_draft refused — unparseable file(s):\n" + strings.Join(parseErrs, "\n")), nil
+			}
 			resp, uerr := c.UpdateDraft(r.GetString("draftId", ""), files)
 			if uerr != nil {
 				return toolErr(uerr)
 			}
-			return jsonResult(resp)
+			return jsonResult(map[string]any{"files": resp.Files, "diagnostics": diags})
 		})
 
 	s.AddTool(mcp.NewTool("draft_diff",
@@ -74,6 +92,51 @@ func registerDraftTools(s *server.MCPServer, c *core.Service) {
 		mcp.WithString("file", mcp.Description("file path or basename; defaults to the first file"))),
 		func(_ context.Context, r mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 			resp, err := c.DraftDiff(r.GetString("draftId", ""), r.GetString("file", ""))
+			if err != nil {
+				return toolErr(err)
+			}
+			return jsonResult(resp)
+		})
+
+	s.AddTool(mcp.NewTool("add_import",
+		mcp.WithDescription("Add a companion-spec import (alias -> namespace URI) to a draft file. Additive: fails if the alias already exists. Returns the file list + validation diagnostics."),
+		mcp.WithString("draftId", mcp.Required()),
+		mcp.WithString("file", mcp.Description("file path or basename; defaults to the first file")),
+		mcp.WithString("alias", mcp.Required(), mcp.Description("import alias, e.g. DI")),
+		mcp.WithString("namespace", mcp.Required(), mcp.Description("namespace URI"))),
+		func(_ context.Context, r mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+			resp, err := c.AddImport(r.GetString("draftId", ""), r.GetString("file", ""),
+				r.GetString("alias", ""), r.GetString("namespace", ""))
+			if err != nil {
+				return toolErr(err)
+			}
+			return jsonResult(resp)
+		})
+
+	s.AddTool(mcp.NewTool("add_type",
+		mcp.WithDescription("Add an ObjectType to a draft file. name is the type name; body is its DSL body (doc/base/abstract/members, snake_case — exactly what you'd write under the type). Additive: fails if the type name exists. Returns the file list + validation diagnostics."),
+		mcp.WithString("draftId", mcp.Required()),
+		mcp.WithString("file", mcp.Description("file path or basename; defaults to the first file")),
+		mcp.WithString("name", mcp.Required(), mcp.Description("type name, e.g. WeigherType")),
+		mcp.WithString("body", mcp.Required(), mcp.Description("type body YAML: doc/base/abstract/members"))),
+		func(_ context.Context, r mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+			resp, err := c.AddType(r.GetString("draftId", ""), r.GetString("file", ""),
+				r.GetString("name", ""), r.GetString("body", ""))
+			if err != nil {
+				return toolErr(err)
+			}
+			return jsonResult(resp)
+		})
+
+	s.AddTool(mcp.NewTool("add_instance",
+		mcp.WithDescription("Add an object instance to a draft file. name is the instance name; body is its DSL body (type, under, level, and any value overrides/children). Additive: fails if the instance name exists. Returns the file list + validation diagnostics."),
+		mcp.WithString("draftId", mcp.Required()),
+		mcp.WithString("file", mcp.Description("file path or basename; defaults to the first file")),
+		mcp.WithString("name", mcp.Required(), mcp.Description("instance name, e.g. Weigher1")),
+		mcp.WithString("body", mcp.Required(), mcp.Description("instance body YAML: type, under, level, ..."))),
+		func(_ context.Context, r mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+			resp, err := c.AddInstance(r.GetString("draftId", ""), r.GetString("file", ""),
+				r.GetString("name", ""), r.GetString("body", ""))
 			if err != nil {
 				return toolErr(err)
 			}

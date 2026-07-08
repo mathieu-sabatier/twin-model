@@ -22,8 +22,8 @@ type entry struct {
 	abstract bool
 	baseURI  string
 	baseName string
-	members  []dsl.CatalogMember // filled in Task 5
-	enum     []dsl.EnumMember    // populated for DataType entries by computeEnums
+	members  []dsl.CatalogMember
+	enum     []dsl.EnumMember // populated for DataType entries by computeEnums
 	node     *Node
 	set      *NodeSet
 }

@@ -11,7 +11,7 @@ func TestEmitOrgSpineDeterministic(t *testing.T) {
 		"instances:\n" +
 		"  Acme: { type: ISA95:EquipmentType, level: Enterprise, under: OpcUa:ObjectsFolder }\n" +
 		"  Site1: { type: ISA95:EquipmentType, level: Site, under: Acme }\n"
-	a := emitWithCatalog(t, src) // reuse the Task 4 helper (same test package)
+	a := emitWithCatalog(t, src)
 	b := emitWithCatalog(t, src)
 	if a != b {
 		t.Errorf("emit not byte-identical across runs")

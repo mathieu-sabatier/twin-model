@@ -15,6 +15,7 @@ var (
 	ErrInvalid  = errors.New("invalid argument") // missing/blank required argument (HTTP 400)
 	ErrReadTree = errors.New("read tree")        // git host read failure (HTTP 502)
 	ErrInternal = errors.New("internal error")   // catalog load/deps failure (HTTP 500)
+	ErrConflict = errors.New("conflict")         // additive operation target already exists
 )
 
 // ValidationError reports that a draft cannot be proposed because one or more
