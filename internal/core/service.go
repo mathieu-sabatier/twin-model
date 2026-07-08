@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"regexp"
 	"sort"
 	"strings"
 	"sync"
@@ -504,6 +505,9 @@ func (s *Service) Propose(ctx context.Context, id, branch, title, msg string) (d
 	if branch == "" || title == "" {
 		return dto.ProposeResponse{}, fmt.Errorf("%w: branch and title are required", ErrInvalid)
 	}
+	if err := validateBranchName(branch, d.BaseRef); err != nil {
+		return dto.ProposeResponse{}, err
+	}
 	if blocking := s.lintFileset(d.Files); len(blocking) > 0 {
 		return dto.ProposeResponse{}, &ValidationError{Blocking: blocking}
 	}
@@ -512,6 +516,27 @@ func (s *Service) Propose(ctx context.Context, id, branch, title, msg string) (d
 		return dto.ProposeResponse{}, err // *PRError or transport error; adapter renders
 	}
 	return dto.ProposeResponse{URL: url}, nil
+}
+
+// branchNameRe is the allowlist for a PR branch name: letters, digits, dot,
+// underscore, slash, hyphen. It intentionally rejects whitespace, colons, and
+// control characters — the inputs that otherwise fail deep inside go-git's
+// refspec handling with an opaque "push failed", since a PR branch comes from
+// an (LLM) caller.
+var branchNameRe = regexp.MustCompile(`^[A-Za-z0-9._/-]+$`)
+
+// validateBranchName rejects a PR branch git/go-git would choke on, and one
+// equal to the base branch (which would target the existing ref instead of
+// opening a fresh PR branch), up front with a clear ErrInvalid rather than an
+// opaque transport failure after the clone.
+func validateBranchName(branch, baseRef string) error {
+	if !branchNameRe.MatchString(branch) {
+		return fmt.Errorf("%w: branch %q has invalid characters (allowed: letters, digits, . _ / -)", ErrInvalid, branch)
+	}
+	if branch == baseRef {
+		return fmt.Errorf("%w: branch %q must differ from the base branch", ErrInvalid, branch)
+	}
+	return nil
 }
 
 // lintFileset returns the blocking diagnostics across every model file in

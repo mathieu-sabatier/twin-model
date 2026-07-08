@@ -223,3 +223,40 @@ func TestRemoveTypeTool_StillReferenced_IsError(t *testing.T) {
 		t.Fatalf("type still present after forced removal:\n%s", d.Files["demo.yaml"])
 	}
 }
+
+// TestRemoveImportTool_Removes is the MCP-layer happy path for remove_import
+// (previously the one patch tool with no MCP-layer test): DI is declared but
+// unreferenced, so removing it leaves the file clean and stores without force.
+func TestRemoveImportTool_Removes(t *testing.T) {
+	svc := core.New(nil, core.NewStore(time.Hour))
+	src := cleanPatchBaseSrc + "imports:\n  OpcUa: http://opcfoundation.org/UA/\n  DI: http://opcfoundation.org/UA/DI/\n"
+	d := svc.Store().Create("main", map[string][]byte{"demo.yaml": []byte(src)})
+	c, ctx := newClientFor(t, svc)
+
+	res := callTool(t, c, ctx, "remove_import", map[string]any{
+		"draftId": d.ID, "file": "demo.yaml", "alias": "DI"})
+	if res.IsError {
+		t.Fatalf("unexpected error: %s", requireText(t, res))
+	}
+	if strings.Contains(string(d.Files["demo.yaml"]), "DI:") {
+		t.Fatalf("import still present after removal:\n%s", d.Files["demo.yaml"])
+	}
+}
+
+// TestRemoveImportTool_Unknown_IsError mirrors the other not-found tool tests
+// for remove_import's absent-alias path.
+func TestRemoveImportTool_Unknown_IsError(t *testing.T) {
+	svc := core.New(nil, core.NewStore(time.Hour))
+	d := svc.Store().Create("main", map[string][]byte{"demo.yaml": []byte(cleanPatchBaseSrc)})
+	c, ctx := newClientFor(t, svc)
+
+	res := callTool(t, c, ctx, "remove_import", map[string]any{
+		"draftId": d.ID, "file": "demo.yaml", "alias": "Nope"})
+	if !res.IsError {
+		t.Fatalf("want tool error for an absent import alias, got: %+v", res.Content)
+	}
+	tc, ok := mcp.AsTextContent(res.Content[0])
+	if !ok || !strings.Contains(tc.Text, "not found") {
+		t.Errorf("want a not-found tool error, got: %+v", res.Content)
+	}
+}

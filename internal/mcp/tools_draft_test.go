@@ -332,6 +332,34 @@ func TestProposePR_EmptyBranchOrTitle_IsPlainInvalidError(t *testing.T) {
 	}
 }
 
+// TestProposePR_CompositePath_ProposesAndDiscards drives propose_pr's inline
+// (draftId=="") path — CreateDraft + UpdateDraft from baseRef+files, then
+// Propose — which the existing tests never exercised (they all pass an existing
+// draftId). It also pins the orphan-discard fix: the throwaway draft the
+// composite path creates must be gone from the store afterward, not leaked
+// until the TTL sweep.
+func TestProposePR_CompositePath_ProposesAndDiscards(t *testing.T) {
+	clean := "model:\n  name: Demo\n  namespace: urn:x/\n  version: 1.0.0\n  publication_date: 2026-01-01\n"
+	svc := core.New(fakeMCPHost{tree: map[string][]byte{"demo.yaml": []byte(clean)}}, core.NewStore(time.Hour))
+	c, ctx := newClientFor(t, svc)
+
+	res := callTool(t, c, ctx, "propose_pr", map[string]any{
+		"baseRef": "main",
+		"files":   map[string]any{"demo.yaml": clean},
+		"branch":  "propose/demo",
+		"title":   "Add demo",
+	})
+	if res.IsError {
+		t.Fatalf("composite propose_pr errored: %s", requireText(t, res))
+	}
+	if !strings.Contains(requireText(t, res), "https://x/pull/1") {
+		t.Fatalf("want the PR url in the composite result, got: %s", requireText(t, res))
+	}
+	if n := len(svc.ListDrafts().Drafts); n != 0 {
+		t.Errorf("composite propose_pr leaked %d draft(s), want 0 (inline draft must be discarded)", n)
+	}
+}
+
 func TestUpdateDraft_RefusesUnparseable(t *testing.T) {
 	svc := core.New(nil, core.NewStore(time.Hour))
 	d := svc.Store().Create("main", map[string][]byte{"demo.yaml": []byte(patchBaseSrc)})

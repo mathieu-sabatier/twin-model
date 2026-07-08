@@ -285,6 +285,11 @@ func registerDraftTools(s *server.MCPServer, c *core.Service) {
 					return toolErr(err)
 				}
 				draftID = cd.ID
+				// The composite path created this draft only to carry the inline
+				// files into Propose; discard it on the way out so a loop of
+				// (failing or succeeding) inline proposes doesn't pile up orphaned
+				// drafts in the store until the TTL sweep.
+				defer func() { _ = c.DiscardDraft(draftID) }()
 			}
 			resp, err := c.Propose(ctx, draftID, r.GetString("branch", ""), r.GetString("title", ""), r.GetString("message", ""))
 			if err != nil {

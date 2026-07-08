@@ -2,7 +2,9 @@ package core
 
 import (
 	"errors"
+	"fmt"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 )
@@ -468,5 +470,45 @@ func TestRemoveImport_Unknown_IsNotFound(t *testing.T) {
 	_, err := s.RemoveImport(d.ID, "demo.yaml", "Nope", WriteOpts{})
 	if !errors.Is(err, ErrNotFound) {
 		t.Fatalf("err = %v, want ErrNotFound", err)
+	}
+}
+
+// TestConcurrentAddType_NoLostUpdateNoRace hammers one draft with N concurrent
+// AddType calls (distinct names) plus concurrent reads. Run with -race it pins
+// down both concurrency fixes at once: copy-on-Get means the readers never
+// touch the live Files map (no data race), and routing the whole
+// read-modify-write through store.Mutate means no add is silently lost (every
+// one of the N types must survive). Before the fix this both race-detected and
+// dropped all-but-one type.
+func TestConcurrentAddType_NoLostUpdateNoRace(t *testing.T) {
+	s := New(nil, NewStore(time.Hour))
+	d := seedDraft(t, s, cleanBaseSrc+"imports:\n  OpcUa: http://opcfoundation.org/UA/\n")
+
+	const n = 12
+	var wg sync.WaitGroup
+	for i := 0; i < n; i++ {
+		wg.Add(2)
+		// Writer: add a distinct type. force:true because forward/incremental
+		// construction isn't the point here — concurrency safety is.
+		go func(i int) {
+			defer wg.Done()
+			_, _ = s.AddType(d.ID, "demo.yaml", fmt.Sprintf("T%d", i), "base: OpcUa:BaseObjectType\n", WriteOpts{Force: true})
+		}(i)
+		// Reader: exercise the copy-on-Get read path against the live writers.
+		go func() {
+			defer wg.Done()
+			_, _ = s.DraftFileRaw(d.ID, "demo.yaml")
+		}()
+	}
+	wg.Wait()
+
+	raw, err := s.DraftFileRaw(d.ID, "demo.yaml")
+	if err != nil {
+		t.Fatalf("DraftFileRaw: %v", err)
+	}
+	for i := 0; i < n; i++ {
+		if !strings.Contains(string(raw), fmt.Sprintf("T%d:", i)) {
+			t.Errorf("type T%d was lost under concurrent AddType (last-write-wins hazard):\n%s", i, raw)
+		}
 	}
 }

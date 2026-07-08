@@ -4,10 +4,18 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/hex"
+	"log"
 	"sort"
 	"sync"
 	"time"
 )
+
+// defaultMaxDrafts caps the number of live drafts a store holds. Drafts are a
+// throwaway working cache reclaimed by the TTL sweeper; the cap is a second
+// backstop so an unauthenticated burst of create_draft (each retaining two
+// in-memory copies of the model tree) cannot exhaust memory before the sweep.
+// It is generous enough never to bite normal interactive use.
+const defaultMaxDrafts = 256
 
 // Draft is a server-side working copy of a model fileset. BaseFiles is an
 // immutable snapshot taken at creation (the baseRef version), used for diffing;
@@ -23,21 +31,27 @@ type Draft struct {
 // Store is a mutex-guarded, in-memory draft store with a TTL sweeper. It is the
 // only server state; the git host is the only persistence.
 type Store struct {
-	mu  sync.Mutex
-	ttl time.Duration
-	now func() time.Time
-	m   map[string]*Draft
+	mu        sync.Mutex
+	ttl       time.Duration
+	now       func() time.Time
+	m         map[string]*Draft
+	maxDrafts int
 }
 
 // NewStore returns a store whose drafts expire after ttl of inactivity.
 func NewStore(ttl time.Duration) *Store {
-	return &Store{ttl: ttl, now: time.Now, m: map[string]*Draft{}}
+	return &Store{ttl: ttl, now: time.Now, m: map[string]*Draft{}, maxDrafts: defaultMaxDrafts}
 }
 
-// Create snapshots files into a new draft and returns it.
+// Create snapshots files into a new draft and returns it. When the store is at
+// capacity, the least-recently-updated draft is evicted first so live-draft
+// memory stays bounded.
 func (s *Store) Create(baseRef string, files map[string][]byte) *Draft {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	if s.maxDrafts > 0 && len(s.m) >= s.maxDrafts {
+		s.evictOldestLocked()
+	}
 	d := &Draft{
 		ID:        newID(),
 		BaseRef:   baseRef,
@@ -49,15 +63,23 @@ func (s *Store) Create(baseRef string, files map[string][]byte) *Draft {
 	return d
 }
 
-// Get returns the draft for id.
+// Get returns a deep copy of the draft for id. It is a copy, not the live
+// pointer, so a caller can read (and even mutate) the result off-lock without
+// racing a concurrent Update/Mutate on the same draft's maps. Persisting a
+// change must go through Update/Mutate.
 func (s *Store) Get(id string) (*Draft, bool) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	d, ok := s.m[id]
-	return d, ok
+	if !ok {
+		return nil, false
+	}
+	return copyDraft(d), true
 }
 
-// Update applies fn to the draft under the lock and bumps UpdatedAt.
+// Update applies fn to the draft under the lock and bumps UpdatedAt. It returns
+// a deep copy of the resulting draft (never the live pointer) for the same
+// off-lock-safety reason as Get.
 func (s *Store) Update(id string, fn func(*Draft)) (*Draft, bool) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -67,7 +89,43 @@ func (s *Store) Update(id string, fn func(*Draft)) (*Draft, bool) {
 	}
 	fn(d)
 	d.UpdatedAt = s.now()
-	return d, true
+	return copyDraft(d), true
+}
+
+// Mutate runs fn against the live draft under the lock — the atomic
+// read-modify-write primitive. fn reports whether it changed the draft (bump ⇒
+// UpdatedAt is refreshed) and may return an error, which is propagated. Because
+// the whole parse→mutate→validate→store cycle of a patch op runs inside this
+// one critical section, two concurrent edits to the same draft cannot lose an
+// update (the classic read-snapshot-then-blind-write hazard). found reports
+// whether the id existed.
+func (s *Store) Mutate(id string, fn func(*Draft) (bump bool, err error)) (found bool, err error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	d, ok := s.m[id]
+	if !ok {
+		return false, nil
+	}
+	bump, err := fn(d)
+	if bump {
+		d.UpdatedAt = s.now()
+	}
+	return true, err
+}
+
+// evictOldestLocked removes the least-recently-updated draft. Caller holds mu.
+func (s *Store) evictOldestLocked() {
+	var oldestID string
+	var oldest time.Time
+	for id, d := range s.m {
+		if oldestID == "" || d.UpdatedAt.Before(oldest) {
+			oldestID, oldest = id, d.UpdatedAt
+		}
+	}
+	if oldestID != "" {
+		delete(s.m, oldestID)
+		log.Printf("twinmodel: draft store at capacity (%d), evicted oldest draft %s", s.maxDrafts, oldestID)
+	}
 }
 
 // DraftInfo is a race-free scalar snapshot of a draft for listing.
@@ -133,6 +191,19 @@ func newID() string {
 		panic(err) // crypto/rand failing is unrecoverable
 	}
 	return hex.EncodeToString(b[:])
+}
+
+// copyDraft returns a deep copy of a draft: scalar fields plus independent
+// copies of both file maps, so the copy shares no mutable state with the stored
+// draft.
+func copyDraft(d *Draft) *Draft {
+	return &Draft{
+		ID:        d.ID,
+		BaseRef:   d.BaseRef,
+		BaseFiles: copyFiles(d.BaseFiles),
+		Files:     copyFiles(d.Files),
+		UpdatedAt: d.UpdatedAt,
+	}
 }
 
 func copyFiles(in map[string][]byte) map[string][]byte {

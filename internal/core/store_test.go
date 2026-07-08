@@ -103,6 +103,35 @@ func TestStore_List_ReturnsAllSortedByID(t *testing.T) {
 	}
 }
 
+// TestStore_Create_EvictsOldestOverCap verifies the live-draft cap: once the
+// store is full, Create evicts the least-recently-updated draft rather than
+// growing without bound (the second backstop, alongside the TTL sweep, against
+// an unauthenticated create_draft flood).
+func TestStore_Create_EvictsOldestOverCap(t *testing.T) {
+	s := NewStore(time.Hour)
+	s.maxDrafts = 3
+	base := time.Unix(1_000_000, 0)
+	var tick int64
+	s.now = func() time.Time { tick++; return base.Add(time.Duration(tick) * time.Second) } // strictly increasing
+
+	d1 := s.Create("main", map[string][]byte{"a.yaml": []byte("1")})
+	d2 := s.Create("main", map[string][]byte{"b.yaml": []byte("2")})
+	d3 := s.Create("main", map[string][]byte{"c.yaml": []byte("3")})
+	d4 := s.Create("main", map[string][]byte{"d.yaml": []byte("4")}) // exceeds cap → evicts d1 (oldest)
+
+	if _, ok := s.Get(d1.ID); ok {
+		t.Error("oldest draft d1 should have been evicted at the cap")
+	}
+	for _, d := range []*Draft{d2, d3, d4} {
+		if _, ok := s.Get(d.ID); !ok {
+			t.Errorf("draft %s should still be present", d.ID)
+		}
+	}
+	if got := len(s.List()); got != 3 {
+		t.Errorf("store holds %d drafts, want the cap of 3", got)
+	}
+}
+
 func TestStore_Discard_RemovesAndReportsExistence(t *testing.T) {
 	s := NewStore(time.Hour)
 	d := s.Create("main", map[string][]byte{"a.yaml": []byte("1")})
