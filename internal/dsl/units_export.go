@@ -5,6 +5,7 @@ import "sort"
 // Units returns the known engineering units sorted by symbol, for the UI's unit
 // picker. The underlying map is the single source of truth (see units.go).
 func Units() []Unit {
+	unitsOnce.Do(loadUnits) // LookupUnit triggers this as a side effect; Units must not depend on that.
 	out := make([]Unit, 0, len(units))
 	for _, u := range units {
 		out = append(out, u)

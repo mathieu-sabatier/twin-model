@@ -1,9 +1,9 @@
-package api
+package core
 
 import (
 	"context"
 
-	"github.com/mathieu-sabatier/twin-model/internal/api/dto"
+	"github.com/mathieu-sabatier/twin-model/internal/dto"
 )
 
 // ProposeParams is everything OpenPR needs to branch, commit the fileset, push,

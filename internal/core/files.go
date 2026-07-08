@@ -1,4 +1,4 @@
-package api
+package core
 
 import (
 	"log"
@@ -6,6 +6,8 @@ import (
 	"sort"
 
 	"gopkg.in/yaml.v3"
+
+	"github.com/mathieu-sabatier/twin-model/internal/dsl"
 )
 
 // This file holds the helpers that operate on a draft/tree's file map
@@ -97,6 +99,21 @@ func modelFilesOnly(tree map[string][]byte) map[string][]byte {
 	return out
 }
 
+// canonicalize returns the canonical YAML for content when it parses; otherwise
+// it returns the raw bytes, so the next model/validate read surfaces the
+// structural error rather than silently dropping the edit.
+func canonicalize(filename string, content []byte) []byte {
+	m, err := dsl.Parse(filename, content)
+	if err != nil {
+		return content
+	}
+	formatted, err := dsl.Format(m)
+	if err != nil {
+		return content
+	}
+	return formatted
+}
+
 // sortedKeys returns the map's keys in deterministic (sorted) order.
 func sortedKeys(m map[string][]byte) []string {
 	out := make([]string, 0, len(m))
@@ -106,3 +123,10 @@ func sortedKeys(m map[string][]byte) []string {
 	sort.Strings(out)
 	return out
 }
+
+// CloneFiles returns a deep copy of a path→bytes file map. Exported for callers
+// outside this package (test fakes, transport adapters).
+func CloneFiles(in map[string][]byte) map[string][]byte { return copyFiles(in) }
+
+// SortedKeys returns a file map's keys in deterministic (sorted) order.
+func SortedKeys(m map[string][]byte) []string { return sortedKeys(m) }

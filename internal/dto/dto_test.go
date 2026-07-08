@@ -14,9 +14,9 @@ var update = flag.Bool("update", false, "update golden files")
 
 // TestModelGolden is the drift guard for the SPA's hand-kept types.ts: it marshals
 // the real example model through the DTO mappers and pins the JSON shape. Regenerate
-// intentionally with `go test ./internal/api/dto -run TestModelGolden -update`.
+// intentionally with `go test ./internal/dto -run TestModelGolden -update`.
 func TestModelGolden(t *testing.T) {
-	data, err := os.ReadFile("../../../examples/equipment.yaml")
+	data, err := os.ReadFile("../../examples/equipment.yaml")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -88,7 +88,7 @@ func TestDiagnosticSeverityString(t *testing.T) {
 // TestCatalogGolden pins the catalog DTO JSON shape for the SPA's types.ts
 // mirror. Regenerate with:
 //
-//	go test ./internal/api/dto -run TestCatalogGolden -update
+//	go test ./internal/dto -run TestCatalogGolden -update
 func TestCatalogGolden(t *testing.T) {
 	// Hand-built representative detail — stable, no dependency on nodeset here.
 	detail := CatalogTypeDetail{

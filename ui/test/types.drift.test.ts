@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
-import golden from '../../internal/api/dto/testdata/model.golden.json'
+import golden from '../../internal/dto/testdata/model.golden.json'
 import type {
   Argument,
   Instance,
@@ -11,7 +11,7 @@ import type {
   ObjectType,
 } from '~/types'
 
-// Drift guard: types.ts is a hand-kept mirror of internal/api/dto/dto.go. This
+// Drift guard: types.ts is a hand-kept mirror of internal/dto/dto.go. This
 // test imports the REAL Go golden (a bare `Model`, emitted by the Go golden test
 // from the same DTO the server uses) and asserts it is assignable to our `Model`.
 //

@@ -11,23 +11,20 @@ package main
 
 import (
 	"bytes"
-	"context"
 	"flag"
 	"fmt"
 	"io"
-	"net/http"
 	"os"
 	"path/filepath"
 	"sort"
 	"strings"
-	"time"
 
-	"github.com/mathieu-sabatier/twin-model/internal/api"
+	"github.com/mathieu-sabatier/twin-model/internal/app"
+	"github.com/mathieu-sabatier/twin-model/internal/core"
 	"github.com/mathieu-sabatier/twin-model/internal/dsl"
 	"github.com/mathieu-sabatier/twin-model/internal/i3x"
 	"github.com/mathieu-sabatier/twin-model/internal/modeldesign"
 	"github.com/mathieu-sabatier/twin-model/internal/nodeset"
-	"github.com/mathieu-sabatier/twin-model/internal/web"
 	"github.com/mathieu-sabatier/twin-model/schema"
 )
 
@@ -53,6 +50,8 @@ func run(args []string, stdout, stderr io.Writer) int {
 		return cmdFmt(args[1:], stdout, stderr)
 	case "serve":
 		return cmdServe(args[1:], stdout, stderr)
+	case "mcp":
+		return cmdMCP(args[1:], stdout, stderr)
 	case "catalog":
 		return cmdCatalog(args[1:], stdout, stderr)
 	case "compile":
@@ -77,87 +76,62 @@ Usage:
   twinmodel schema                     Print the DSL JSON Schema to stdout
   twinmodel fmt    -i <dir> [-w]        Canonically format *.yaml (in place with -w)
   twinmodel serve                      Serve the HTTP API (env: GIT_REPO, GIT_TOKEN, DRAFT_TTL, ADDR)
+  twinmodel mcp                        Serve the MCP tools over stdio (env: GIT_REPO, GIT_TOKEN, ...)
   twinmodel catalog list|types|show|search   Explore bundled companion specs (DI, Machinery, ISA-95)
   twinmodel compile -i <dir> -o <dir>        Transpile + run the ModelCompiler -> NodeSet2 (needs .NET; --print-cmd to preview)
 `)
 }
 
-type serveConfig struct {
-	addr string
-	ttl  time.Duration
-	host *api.GitHubHost
-}
-
-// buildServeConfig reads the server configuration from the environment. GIT_REPO
-// is required; DRAFT_TTL defaults to 2h and ADDR to :8080. GITHUB_API overrides
-// the REST base (for GitHub Enterprise or tests).
-func buildServeConfig() (serveConfig, error) {
-	repo := os.Getenv("GIT_REPO")
-	if repo == "" {
-		return serveConfig{}, fmt.Errorf("GIT_REPO is required")
-	}
-	var host *api.GitHubHost
-	if isRemoteRepo(repo) {
-		h, err := api.NewGitHubHost(repo, os.Getenv("GIT_TOKEN"))
-		if err != nil {
-			return serveConfig{}, err
-		}
-		host = h
-	} else {
-		// A local repo path (dev backend): reads, drafts, validation, and previews
-		// work against the local checkout via go-git. propose needs the GitHub REST
-		// API, so it is unavailable in this mode (owner/repo are unset).
-		host = &api.GitHubHost{RepoURL: repo, Token: os.Getenv("GIT_TOKEN"), APIBase: "https://api.github.com"}
-	}
-	if base := os.Getenv("GITHUB_API"); base != "" {
-		host.APIBase = base
-	}
-	ttl := 2 * time.Hour
-	if v := os.Getenv("DRAFT_TTL"); v != "" {
-		d, err := time.ParseDuration(v)
-		if err != nil {
-			return serveConfig{}, fmt.Errorf("DRAFT_TTL %q: %w", v, err)
-		}
-		ttl = d
-	}
-	addr := os.Getenv("ADDR")
-	if addr == "" {
-		addr = ":8080"
-	}
-	return serveConfig{addr: addr, ttl: ttl, host: host}, nil
-}
-
-// isRemoteRepo reports whether GIT_REPO is a remote URL (https/http/ssh) rather
-// than a local filesystem path used as a dev backend.
-func isRemoteRepo(s string) bool {
-	return strings.Contains(s, "://") || strings.HasPrefix(s, "git@")
-}
-
-// cmdServe builds the server from env and serves until interrupted.
+// cmdServe builds the fx-wired serve app from env and serves until interrupted.
 func cmdServe(args []string, stdout, stderr io.Writer) int {
 	fs := flag.NewFlagSet("serve", flag.ContinueOnError)
 	fs.SetOutput(stderr)
 	if err := fs.Parse(args); err != nil {
 		return 2
 	}
-	cfg, err := buildServeConfig()
+	// Gate on config (and eager host construction) before starting the fx app so
+	// any config-derived error -- missing GIT_REPO, a malformed GIT_REPO URL,
+	// etc. -- exits 2 with a unified message (matching the pre-fx
+	// buildServeConfig behavior) instead of surfacing only via fx's invoke chain
+	// as a raw error dump on os.Exit(1). RunServe still builds its own graph;
+	// this call is purely a validation gate.
+	cfg, err := core.ConfigFromEnv()
 	if err != nil {
 		fmt.Fprintf(stderr, "twinmodel serve: %v\n", err)
 		return 2
 	}
-	store := api.NewStore(cfg.ttl)
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	go store.StartSweeper(ctx, cfg.ttl/4+time.Minute)
-	srv := api.NewServer(cfg.host, store)
-	// One binary, one origin, no proxy: /api is the JSON API, everything else is
-	// the embedded SPA (which calls same-origin /api).
-	root := http.NewServeMux()
-	root.Handle("/api/", srv.Routes())
-	root.Handle("/", web.Handler())
-	fmt.Fprintf(stdout, "twinmodel serve: listening on %s (repo %s; SPA at /, API at /api)\n", cfg.addr, cfg.host.RepoURL)
-	if err := http.ListenAndServe(cfg.addr, root); err != nil {
+	if _, err := core.NewGitHost(cfg); err != nil {
 		fmt.Fprintf(stderr, "twinmodel serve: %v\n", err)
+		return 2
+	}
+	if err := app.RunServe(); err != nil {
+		fmt.Fprintf(stderr, "twinmodel serve: %v\n", err)
+		return 1
+	}
+	return 0
+}
+
+// cmdMCP builds the fx-wired stdio MCP app from env and serves until stdin
+// closes. Mirrors cmdServe's config gate: any config-derived error (missing
+// GIT_REPO, a malformed GIT_REPO URL, etc.) exits 2 with a unified message
+// instead of surfacing only via fx's invoke chain as a raw error dump.
+func cmdMCP(args []string, stdout, stderr io.Writer) int {
+	fs := flag.NewFlagSet("mcp", flag.ContinueOnError)
+	fs.SetOutput(stderr)
+	if err := fs.Parse(args); err != nil {
+		return 2
+	}
+	cfg, err := core.ConfigFromEnv()
+	if err != nil {
+		fmt.Fprintf(stderr, "twinmodel mcp: %v\n", err)
+		return 2
+	}
+	if _, err := core.NewGitHost(cfg); err != nil {
+		fmt.Fprintf(stderr, "twinmodel mcp: %v\n", err)
+		return 2
+	}
+	if err := app.RunMCPStdio(); err != nil {
+		fmt.Fprintf(stderr, "twinmodel mcp: %v\n", err)
 		return 1
 	}
 	return 0

@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
-import golden from '../../internal/api/dto/testdata/catalog.golden.json'
+import golden from '../../internal/dto/testdata/catalog.golden.json'
 import type { CatalogTypeDetail, MemberKind } from '~/types'
 
 // Drift guard: the catalog DTOs' JSON (Go golden) must stay assignable to the

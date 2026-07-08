@@ -3,37 +3,19 @@ package api
 import (
 	"encoding/json"
 	"net/http"
-	"sync"
 
-	"github.com/mathieu-sabatier/twin-model/internal/nodeset"
-	"github.com/mathieu-sabatier/twin-model/schema"
+	"github.com/mathieu-sabatier/twin-model/internal/core"
 )
 
-// Server holds the draft store and the git host and wires the HTTP routes. It is
-// stateless between requests except the store and the lazily-built catalog.
-type Server struct {
-	store *Store
-	host  GitHost
+// Server adapts core.Service to HTTP. It is stateless except for the Service it wraps.
+type Server struct{ svc *core.Service }
 
-	catalogOnce sync.Once
-	catalog     *nodeset.Catalog
-	catalogErr  error
-}
+// NewServer keeps its (host, store) signature so existing callers/tests are
+// unchanged; it builds the core.Service internally.
+func NewServer(host GitHost, store *Store) *Server { return &Server{svc: core.New(host, store)} }
 
-// NewServer constructs a Server.
-func NewServer(host GitHost, store *Store) *Server {
-	return &Server{store: store, host: host}
-}
-
-// catalogInstance builds the full companion-spec catalog once and caches it.
-// All catalog endpoints share this instance; the NodeSet2 XML is parsed at most
-// once per process.
-func (s *Server) catalogInstance() (*nodeset.Catalog, error) {
-	s.catalogOnce.Do(func() {
-		s.catalog, s.catalogErr = nodeset.LoadAll()
-	})
-	return s.catalog, s.catalogErr
-}
+// NewServerFromService adapts an existing core.Service to HTTP.
+func NewServerFromService(svc *core.Service) *Server { return &Server{svc: svc} }
 
 // Routes returns the API mux. Stdlib net/http (Go 1.22+ method+path patterns) —
 // no framework.
@@ -66,7 +48,7 @@ func (s *Server) Routes() http.Handler {
 func (s *Server) handleSchema(w http.ResponseWriter, _ *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	_, _ = w.Write([]byte(schema.JSON))
+	_, _ = w.Write([]byte(s.svc.Schema()))
 }
 
 // writeJSON writes v as indented JSON with the given status.

@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/mathieu-sabatier/twin-model/internal/api/dto"
+	"github.com/mathieu-sabatier/twin-model/internal/dto"
 )
 
 func TestGitHubHostInfo(t *testing.T) {

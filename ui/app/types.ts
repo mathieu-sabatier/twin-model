@@ -1,4 +1,4 @@
-// Hand-kept mirror of internal/api/dto/dto.go. Guarded by types.drift.test.ts.
+// Hand-kept mirror of internal/dto/dto.go. Guarded by types.drift.test.ts.
 //
 // These interfaces are the SPA's copy of the Go JSON DTOs (camelCase, matching
 // the `json:"..."` tags). Fields the Go DTO marks `omitempty` are optional (`?:`)

@@ -1,4 +1,4 @@
-package api
+package core
 
 import (
 	"bytes"
@@ -21,7 +21,7 @@ import (
 	githttp "github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/go-git/go-git/v5/storage/memory"
 
-	"github.com/mathieu-sabatier/twin-model/internal/api/dto"
+	"github.com/mathieu-sabatier/twin-model/internal/dto"
 )
 
 // PRError is returned when the GitHub API rejects the create-PR request. It keeps
@@ -42,6 +42,11 @@ func (e *PRError) Error() string {
 const (
 	commitAuthorName  = "twinmodel-bot"
 	commitAuthorEmail = "bot@twinmodel"
+
+	// CommitAuthorName/CommitAuthorEmail are exported for the transitional
+	// internal/api forwarders (Task 2→3); see commitAuthorName/commitAuthorEmail.
+	CommitAuthorName  = commitAuthorName
+	CommitAuthorEmail = commitAuthorEmail
 )
 
 // GitHubHost is the real GitHost implementation: go-git for all git operations
