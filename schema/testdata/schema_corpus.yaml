@@ -1,0 +1,41 @@
+model:
+  name: SchemaCorpus
+  namespace: https://example/UA/Corpus/
+  prefix: Corpus
+  version: 1.0.0
+  publication_date: "2026-01-01"
+
+hierarchy: { allowLevelSkip: true }
+
+imports:
+  OpcUa: http://opcfoundation.org/UA/
+  DI: http://opcfoundation.org/UA/DI/
+
+enums:
+  State:
+    doc: demo enum
+    values: [Idle, Running]
+
+object_types:
+  WidgetType:
+    doc: A widget
+    base: OpcUa:BaseObjectType
+    members:
+      Weight: { type: OpcUa:Double, unit: kg }
+      Mode: { type: State, access: rw }
+      Info:
+        kind: object
+        children:
+          Serial: { type: OpcUa:String }
+
+instances:
+  Widget1:
+    type: WidgetType
+    under: Cell1
+    level: Unit
+
+perspectives:
+  functional:
+    nodes:
+      root:
+        members: [Widget1]

@@ -6,7 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/mathieu-sabatier/twin-model/internal/api/dto"
+	"github.com/mathieu-sabatier/twin-model/internal/core"
+	"github.com/mathieu-sabatier/twin-model/internal/dto"
 )
 
 // fakeHost is an in-memory GitHost: ReadTree serves a fixed tree per ref, and
@@ -37,7 +38,7 @@ func (f *fakeHost) ReadTree(_ context.Context, ref string) (map[string][]byte, e
 	if !ok {
 		return nil, context.Canceled // any error; handler maps to 502
 	}
-	return copyFiles(t), nil
+	return core.CloneFiles(t), nil
 }
 
 func (f *fakeHost) OpenPR(_ context.Context, p ProposeParams) (string, error) {

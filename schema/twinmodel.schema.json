@@ -24,6 +24,18 @@
     "instances": {
       "type": "object",
       "additionalProperties": { "$ref": "#/$defs/instance" }
+    },
+    "hierarchy": {
+      "description": "Document-level hierarchy options.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "allowLevelSkip": { "type": "boolean" }
+      }
+    },
+    "perspectives": {
+      "type": "object",
+      "additionalProperties": { "$ref": "#/$defs/perspective" }
     }
   },
   "$defs": {
@@ -146,6 +158,7 @@
       "properties": {
         "type": { "type": "string", "description": "A non-abstract ObjectType." },
         "under": { "type": "string", "description": "Parent to nest under: an import target (e.g. OpcUa:ObjectsFolder) or another instance name." },
+        "level": { "type": "string", "description": "ISA-95 hierarchy level for this instance (e.g. Unit, Cell)." },
         "values": {
           "type": "object",
           "description": "Override property/variable initial values. Keys are (inherited) value-bearing member names.",
@@ -160,6 +173,39 @@
             "additionalProperties": false,
             "properties": { "of": { "type": "string", "description": "Placeholder reference, e.g. \"Zone<No>\"." } }
           }
+        }
+      }
+    },
+    "perspective": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "label": { "type": "string" },
+        "membership": {
+          "description": "Whether a node's members must belong to a single node (exclusive, default) or may be shared (overlapping).",
+          "enum": ["exclusive", "overlapping"]
+        },
+        "export": { "type": "boolean" },
+        "nodes": {
+          "type": "object",
+          "additionalProperties": { "$ref": "#/$defs/perspectiveNode" }
+        }
+      }
+    },
+    "perspectiveNode": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "label": { "type": "string" },
+        "children": {
+          "type": "array",
+          "description": "Other node ids nested under this one.",
+          "items": { "type": "string" }
+        },
+        "members": {
+          "type": "array",
+          "description": "Instance names grouped under this node.",
+          "items": { "type": "string" }
         }
       }
     }

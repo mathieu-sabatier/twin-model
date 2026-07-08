@@ -5,7 +5,7 @@
 // Vite fs.allow lets tests read above ui/); it is never part of the SSG bundle.
 import { describe, it, expect } from 'vitest'
 import { equipmentModel, schemaJson } from '~/mocks/fixtures'
-import goldenReal from '../../internal/api/dto/testdata/model.golden.json'
+import goldenReal from '../../internal/dto/testdata/model.golden.json'
 import schemaReal from '../../schema/twinmodel.schema.json'
 
 describe('mock fixtures stay in sync with the real Go sources', () => {

@@ -8,7 +8,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/mathieu-sabatier/twin-model/internal/api/dto"
+	"github.com/mathieu-sabatier/twin-model/internal/dto"
 )
 
 func TestListPRs(t *testing.T) {

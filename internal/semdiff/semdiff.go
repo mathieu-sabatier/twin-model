@@ -32,6 +32,10 @@ const (
 	ValueChanged     ChangeKind = "ValueChanged"
 	ChildAdded       ChangeKind = "ChildAdded"
 	ChildRemoved     ChangeKind = "ChildRemoved"
+	ImportAdded      ChangeKind = "ImportAdded"
+	ImportRemoved    ChangeKind = "ImportRemoved"
+	NamespaceChanged ChangeKind = "NamespaceChanged"
+	VersionChanged   ChangeKind = "VersionChanged"
 )
 
 // Change is one semantic difference. Only the fields relevant to Kind are set.
@@ -52,11 +56,49 @@ type Change struct {
 // Diff returns the changelist transforming base into draft.
 func Diff(base, draft *dsl.Model) []Change {
 	var out []Change
+	out = append(out, diffHeader(base, draft)...)
+	out = append(out, diffImports(base, draft)...)
 	out = append(out, diffTypes(base, draft)...)
 	out = append(out, diffEnums(base, draft)...)
 	out = append(out, diffInstances(base, draft)...)
 	for i := range out {
 		out[i].Text = render(out[i])
+	}
+	return out
+}
+
+// diffHeader reports model-header changes (namespace, version).
+func diffHeader(base, draft *dsl.Model) []Change {
+	var out []Change
+	if base.Namespace != draft.Namespace {
+		out = append(out, Change{Kind: NamespaceChanged, Old: base.Namespace, New: draft.Namespace})
+	}
+	if base.Version != draft.Version {
+		out = append(out, Change{Kind: VersionChanged, Old: base.Version, New: draft.Version})
+	}
+	return out
+}
+
+// diffImports reports added/removed imports, keyed by alias.
+func diffImports(base, draft *dsl.Model) []Change {
+	inBase := map[string]string{}
+	for _, im := range base.Imports {
+		inBase[im.Alias] = im.URI
+	}
+	inDraft := map[string]string{}
+	for _, im := range draft.Imports {
+		inDraft[im.Alias] = im.URI
+	}
+	var out []Change
+	for _, im := range draft.Imports {
+		if _, ok := inBase[im.Alias]; !ok {
+			out = append(out, Change{Kind: ImportAdded, Field: im.Alias, New: im.URI})
+		}
+	}
+	for _, im := range base.Imports {
+		if _, ok := inDraft[im.Alias]; !ok {
+			out = append(out, Change{Kind: ImportRemoved, Field: im.Alias, Old: im.URI})
+		}
 	}
 	return out
 }

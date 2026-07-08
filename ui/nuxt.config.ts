@@ -138,7 +138,7 @@ export default defineNuxtConfig({
 
   // Allow Vite (dev server + Vitest transform) to read files ABOVE ui/ so the
   // types drift guard can import the REAL Go golden at
-  // ../internal/api/dto/testdata/model.golden.json (single source of truth). This
+  // ../internal/dto/testdata/model.golden.json (single source of truth). This
   // affects the dev/test filesystem allowlist only — it does not put those files
   // in the SSG production bundle.
   vite: {

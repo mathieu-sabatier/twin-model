@@ -160,6 +160,77 @@ func TestDiffEnum_DocChange(t *testing.T) {
 	}
 }
 
+func TestDiff_ReportsImportAdded(t *testing.T) {
+	base := &dsl.Model{Namespace: "urn:x", Version: "1.0.0"}
+	draft := &dsl.Model{Namespace: "urn:x", Version: "1.0.0",
+		Imports: []dsl.Import{{Alias: "DI", URI: "http://opcfoundation.org/UA/DI/"}}}
+	changes := Diff(base, draft)
+	var found bool
+	for _, c := range changes {
+		if c.Kind == ImportAdded && c.Field == "DI" {
+			found = true
+			if c.Text == "" {
+				t.Error("ImportAdded change has empty Text")
+			}
+		}
+	}
+	if !found {
+		t.Fatalf("no ImportAdded change in %+v", changes)
+	}
+}
+
+func TestDiff_ReportsVersionChanged(t *testing.T) {
+	base := &dsl.Model{Version: "1.0.0"}
+	draft := &dsl.Model{Version: "1.0.1"}
+	changes := Diff(base, draft)
+	for _, c := range changes {
+		if c.Kind == VersionChanged {
+			return
+		}
+	}
+	t.Fatalf("no VersionChanged change in %+v", changes)
+}
+
+func TestDiff_ReportsImportRemoved(t *testing.T) {
+	base := &dsl.Model{Namespace: "urn:x", Version: "1.0.0",
+		Imports: []dsl.Import{{Alias: "DI", URI: "http://opcfoundation.org/UA/DI/"}}}
+	draft := &dsl.Model{Namespace: "urn:x", Version: "1.0.0"}
+	changes := Diff(base, draft)
+	var found *Change
+	for i := range changes {
+		if changes[i].Kind == ImportRemoved && changes[i].Field == "DI" {
+			found = &changes[i]
+		}
+	}
+	if found == nil {
+		t.Fatalf("no ImportRemoved change in %+v", changes)
+	}
+	if found.Text != "- import DI: http://opcfoundation.org/UA/DI/" {
+		t.Errorf("Text = %q", found.Text)
+	}
+}
+
+func TestDiff_ReportsNamespaceChanged(t *testing.T) {
+	base := &dsl.Model{Namespace: "urn:old/"}
+	draft := &dsl.Model{Namespace: "urn:new/"}
+	changes := Diff(base, draft)
+	var found *Change
+	for i := range changes {
+		if changes[i].Kind == NamespaceChanged {
+			found = &changes[i]
+		}
+	}
+	if found == nil {
+		t.Fatalf("no NamespaceChanged change in %+v", changes)
+	}
+	if found.Old != "urn:old/" || found.New != "urn:new/" {
+		t.Errorf("bad change: %+v", *found)
+	}
+	if found.Text != "namespace urn:old/ → urn:new/" {
+		t.Errorf("Text = %q", found.Text)
+	}
+}
+
 func TestDiffTypeAndValueChanges(t *testing.T) {
 	draft := "model: { name: M, namespace: https://x/, version: 1.0.0, publication_date: 2026-07-02 }\n" +
 		"imports: { OpcUa: http://opcfoundation.org/UA/ }\n" +

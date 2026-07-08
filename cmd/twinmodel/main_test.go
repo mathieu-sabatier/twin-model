@@ -6,7 +6,6 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/mathieu-sabatier/twin-model/internal/dsl"
 )
@@ -145,43 +144,21 @@ func TestServeRequiresRepo(t *testing.T) {
 	}
 }
 
-func TestServeConfigDefaults(t *testing.T) {
-	t.Setenv("GIT_REPO", "https://github.com/o/r.git")
-	t.Setenv("GIT_TOKEN", "tok")
-	t.Setenv("DRAFT_TTL", "")
-	t.Setenv("ADDR", "")
-	cfg, err := buildServeConfig()
-	if err != nil {
-		t.Fatalf("buildServeConfig: %v", err)
+func TestServeBadRepoURLExitsTwo(t *testing.T) {
+	// A malformed remote URL fails owner/repo parsing inside core.NewGitHost,
+	// which cmdServe must catch in its eager gate (Fix 2) -- not let it fall
+	// through to fx's invoke chain, which would os.Exit(1) with a raw fx error
+	// dump instead of exit 2.
+	t.Setenv("GIT_REPO", "https://x")
+	var out, errb bytes.Buffer
+	if code := run([]string{"serve"}, &out, &errb); code != 2 {
+		t.Fatalf("serve with bad GIT_REPO exit=%d, want 2; stderr=%q", code, errb.String())
 	}
-	if cfg.addr != ":8080" {
-		t.Errorf("addr = %q, want :8080", cfg.addr)
+	if !strings.HasPrefix(errb.String(), "twinmodel serve: ") {
+		t.Errorf("stderr should be the unified twinmodel serve message, got %q", errb.String())
 	}
-	if cfg.ttl != 2*time.Hour {
-		t.Errorf("ttl = %v, want 2h", cfg.ttl)
-	}
-	if cfg.host.Owner != "o" || cfg.host.Repo != "r" {
-		t.Errorf("owner/repo = %s/%s, want o/r", cfg.host.Owner, cfg.host.Repo)
-	}
-}
-
-// A local filesystem path in GIT_REPO is accepted as a dev backend (no GitHub
-// URL, no owner/repo parse) so the SPA can be developed against a local checkout.
-func TestServeConfigLocalRepo(t *testing.T) {
-	dir := t.TempDir()
-	t.Setenv("GIT_REPO", dir)
-	t.Setenv("GIT_TOKEN", "")
-	t.Setenv("DRAFT_TTL", "")
-	t.Setenv("ADDR", "")
-	cfg, err := buildServeConfig()
-	if err != nil {
-		t.Fatalf("buildServeConfig(local path): %v", err)
-	}
-	if cfg.host.RepoURL != dir {
-		t.Errorf("RepoURL = %q, want %q", cfg.host.RepoURL, dir)
-	}
-	if cfg.host.Owner != "" || cfg.host.Repo != "" {
-		t.Errorf("owner/repo = %q/%q, want empty for a local repo", cfg.host.Owner, cfg.host.Repo)
+	if strings.Contains(errb.String(), "[Fx]") {
+		t.Errorf("stderr should not contain a raw fx dump, got %q", errb.String())
 	}
 }
 

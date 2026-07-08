@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/mathieu-sabatier/twin-model/internal/api/dto"
+	"github.com/mathieu-sabatier/twin-model/internal/dto"
 )
 
 // TestAPIValidateFlagsUnknownNS0Ref asserts that a draft model importing

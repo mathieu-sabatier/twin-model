@@ -1,8 +1,10 @@
 # twinmodel
 
 [![CI](https://github.com/mathieu-sabatier/twin-model/actions/workflows/model.yml/badge.svg)](https://github.com/mathieu-sabatier/twin-model/actions/workflows/model.yml)
+[![Go Report Card](https://goreportcard.com/badge/github.com/mathieu-sabatier/twin-model)](https://goreportcard.com/report/github.com/mathieu-sabatier/twin-model)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 ![Go](https://img.shields.io/badge/Go-1.26-00ADD8?logo=go&logoColor=white)
+[![MCP server](https://img.shields.io/badge/MCP-server-8A2BE2.svg)](https://modelcontextprotocol.io)
 
 **Author OPC UA information models as small, reviewable YAML — then transpile,
 lint, diagram, and open a pull request, from a CLI or a git-backed web editor.**
@@ -41,6 +43,7 @@ against a Git repo and proposing changes as GitHub pull requests.
 - [Companion-spec catalog](#companion-spec-catalog-and-imports)
 - [DSL reference](#dsl-reference)
 - [HTTP API](#http-api)
+- [MCP server](#mcp-server)
 - [Architecture](#architecture)
 - [License](#license)
 
@@ -53,6 +56,7 @@ twinmodel lint   -i model/           # semantic checks only (CI exit codes)
 twinmodel schema                     # print the DSL JSON Schema to stdout
 twinmodel fmt    -i model/ -w        # canonically format *.yaml in place
 twinmodel serve                      # serve the HTTP API (see below)
+twinmodel mcp                        # serve the MCP tools over stdio (env: GIT_REPO, GIT_TOKEN, …)
 twinmodel catalog list|types|show|search  # browse bundled companion specs (DI, Machinery, ISA-95)
 twinmodel compile -i model/ -o out/  # transpile + run the ModelCompiler -> NodeSet2 (needs .NET)
 ```
@@ -416,6 +420,74 @@ A draft with any parse error or error-severity diagnostic cannot be proposed
 
 `ref`/`baseRef` must be a **branch** name (the editor works off a branch, and a
 GitHub PR base must be a branch); tags and raw commit SHAs are not resolved.
+
+## MCP server
+
+`twinmodel mcp` exposes the modeling operations as Model Context Protocol tools,
+so an AI assistant can read parsed models, browse the bundled companion-spec
+catalog, edit drafts with structured patches, validate/preview them, and open
+pull requests — the same reach as the web editor. It shares `serve`'s
+configuration (`GIT_REPO`, `GIT_TOKEN`, …).
+
+The 29 tools, by area:
+
+- **Read & inspect:** `get_model` (AST), `get_model_source` / `get_draft_source`
+  (raw YAML, for exact round-tripping), `list_model_files`, `parse_model`,
+  `get_schema`, `resolve_type`, `find_unit`, `get_type_details`, `search_types`,
+  `list_namespaces`, `list_types`, `preview_modeldesign`, `preview_diagram`.
+- **Draft editing:** `create_draft`, `update_draft` (whole-file write),
+  `add_import` / `add_type` / `add_instance` and their inverses
+  `remove_import` / `remove_type` / `remove_instance` (additive patches — they
+  splice a single node so untouched content is never rewritten), `draft_diff`
+  (semantic changelist, including import/namespace changes).
+- **Draft lifecycle:** `list_drafts`, `discard_draft` (find and clean up
+  throwaway drafts).
+- **Repo & propose:** `repo_info`, `list_prs`, `list_branches`, `propose_pr`.
+
+**Write semantics.** The patch tools and `update_draft` are strict: a write that
+would leave a file with an error-severity validation diagnostic (e.g. an unknown
+unit, or removing a type an instance still references) is **refused and stores
+nothing**, returning the blocking diagnostics. Pass `force: true` to store anyway
+(e.g. while building forward references), or `dryRun: true` on the `add_*` /
+`remove_*` tools to validate a change in full draft context without storing it.
+
+**stdio (desktop clients).** The client spawns `twinmodel mcp` as a subprocess
+and passes the repo config in its environment. With Claude Code:
+
+    claude mcp add twinmodel -e GIT_REPO=https://github.com/org/model.git -e GIT_TOKEN=ghp_… -- twinmodel mcp
+
+(`twinmodel` must be on `PATH`; `GIT_TOKEN` is only needed to open PRs.) The
+equivalent client-config JSON:
+
+    {
+      "mcpServers": {
+        "twinmodel": {
+          "command": "twinmodel",
+          "args": ["mcp"],
+          "env": { "GIT_REPO": "https://github.com/org/model.git", "GIT_TOKEN": "…" }
+        }
+      }
+    }
+
+**Hosted (HTTP).** `twinmodel serve` also mounts the MCP streamable-HTTP
+transport at `/mcp` (default `http://localhost:8080/mcp`; set `ADDR` to change
+the port), sharing the editor's in-process draft store — a draft an AI creates
+over `/mcp` is openable in the browser, and vice-versa. The running server
+already holds the `GIT_REPO`/`GIT_TOKEN` config, so a client just points at the
+URL — no env needed. With Claude Code:
+
+    claude mcp add --transport http twinmodel http://localhost:8080/mcp
+
+The equivalent client-config JSON:
+
+    {
+      "mcpServers": {
+        "twinmodel": {
+          "type": "http",
+          "url": "http://localhost:8080/mcp"
+        }
+      }
+    }
 
 ## Architecture
 

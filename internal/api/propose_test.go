@@ -7,6 +7,8 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"github.com/mathieu-sabatier/twin-model/internal/core"
 )
 
 func propose(t *testing.T, ts *httptest.Server, id string, branch, title, msg string) *http.Response {
@@ -41,7 +43,7 @@ func TestProposeOpensPR(t *testing.T) {
 		t.Errorf("ProposeParams = %+v", host.lastPR)
 	}
 	if _, ok := host.lastPR.Files["equipment.yaml"]; !ok {
-		t.Errorf("proposed fileset missing equipment.yaml: %v", sortedKeys(host.lastPR.Files))
+		t.Errorf("proposed fileset missing equipment.yaml: %v", core.SortedKeys(host.lastPR.Files))
 	}
 }
 
