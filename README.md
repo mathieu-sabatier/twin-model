@@ -1,6 +1,7 @@
 # twinmodel
 
 [![CI](https://github.com/mathieu-sabatier/twin-model/actions/workflows/model.yml/badge.svg)](https://github.com/mathieu-sabatier/twin-model/actions/workflows/model.yml)
+[![Go Report Card](https://goreportcard.com/badge/github.com/mathieu-sabatier/twin-model)](https://goreportcard.com/report/github.com/mathieu-sabatier/twin-model)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 ![Go](https://img.shields.io/badge/Go-1.26-00ADD8?logo=go&logoColor=white)
 [![MCP server](https://img.shields.io/badge/MCP-server-8A2BE2.svg)](https://modelcontextprotocol.io)
