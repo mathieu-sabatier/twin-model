@@ -9,8 +9,10 @@
 // Panes collapse/stack on narrow widths (side panels hide below `lg`).
 import { onErrorCaptured, onMounted, onUnmounted, ref } from 'vue'
 import { useDraftStore } from '~/stores/draft'
+import { useSelection } from '~/composables/useSelection'
 
 const store = useDraftStore()
+const { clear } = useSelection()
 
 // A child render throw (e.g. a transient bad state) must never tear down the
 // shell and take the BottomBar/Propose button with it. Log and contain.
@@ -35,8 +37,16 @@ onUnmounted(() => window.removeEventListener('keydown', onKey))
   <div class="fixed inset-0 flex flex-col overflow-hidden bg-default">
     <!-- App header -->
     <header class="flex h-11 shrink-0 items-center gap-2.5 border-b border-default px-4">
-      <UIcon name="i-lucide-boxes" class="size-5 text-primary" />
-      <span class="font-semibold tracking-tight text-highlighted">twinmodel</span>
+      <button
+        type="button"
+        class="flex items-center gap-2.5 rounded-md cursor-pointer transition-opacity hover:opacity-80 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+        aria-label="Back to model overview"
+        data-testid="brand-home"
+        @click="clear"
+      >
+        <UIcon name="i-lucide-boxes" class="size-5 text-primary" />
+        <span class="font-semibold tracking-tight text-highlighted">twinmodel</span>
+      </button>
       <span class="hidden text-xs text-dimmed sm:inline">OPC UA type &amp; instance editor</span>
       <UButton
         class="lg:hidden"
@@ -56,7 +66,7 @@ onUnmounted(() => window.removeEventListener('keydown', onKey))
       <UButton
         class="xl:hidden"
         size="xs" color="neutral" variant="ghost" icon="i-lucide-panel-right"
-        aria-label="Open diagram and YAML"
+        aria-label="Open YAML"
         data-testid="mobile-inspector-toggle"
         @click="() => { showInspectorDrawer = true }"
       />
@@ -159,7 +169,7 @@ onUnmounted(() => window.removeEventListener('keydown', onKey))
         <TreePane @navigate="() => { showTreeDrawer = false }" />
       </template>
     </USlideover>
-    <USlideover v-model:open="showInspectorDrawer" side="right" title="Diagram & YAML">
+    <USlideover v-model:open="showInspectorDrawer" side="right" title="YAML">
       <template #body><InspectorPane /></template>
     </USlideover>
     <CatalogPalette v-model:open="showPalette" />

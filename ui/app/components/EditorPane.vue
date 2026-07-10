@@ -68,6 +68,6 @@ const hasSelection = computed(
     />
     <EnumView v-else-if="selectedEnum" :def="selectedEnum" />
 
-    <EmptyState v-else-if="!hasSelection" />
+    <ModelOverview v-else-if="!hasSelection" />
   </div>
 </template>

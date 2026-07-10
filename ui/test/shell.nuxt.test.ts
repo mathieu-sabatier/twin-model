@@ -122,9 +122,18 @@ describe('AppShell — read-only render of the committed model', () => {
     expect(text).toContain('Furnace02')
   })
 
-  it('starts on the empty state until a node is selected', async () => {
+  it('starts on the model overview until a node is selected', async () => {
     const { wrapper } = await mountShell()
-    expect(wrapper.text()).toContain('Select a type or instance')
+    await flushPromises()
+    // Center now shows the model overview instead of the old placeholder text.
+    expect(wrapper.text()).toContain('Model overview')
+    expect(wrapper.text()).not.toContain('Select a type or instance')
+    // The overview embeds the model diagram.
+    const hasDiagram =
+      wrapper.find('[data-pane="diagram"]').exists() ||
+      wrapper.find('[data-pane="diagram-raw"]').exists() ||
+      wrapper.find('[data-pane="diagram-empty"]').exists()
+    expect(hasDiagram).toBe(true)
   })
 
   it('selecting FurnaceType renders its members in the center (DoorClosed, Zones, StartProgram)', async () => {
@@ -239,20 +248,50 @@ describe('AppShell — read-only render of the committed model', () => {
     expect(wrapper.find('[data-testid="mobile-tree-toggle"]').exists()).toBe(true)
   })
 
-  it('renders the inspector Diagram and YAML panes (wired, not stubs)', async () => {
+  it('clicking the header brand clears the selection and returns to the overview', async () => {
+    const { wrapper } = await mountShell()
+
+    // Select a type: center shows its detail, overview caption is gone.
+    const furnace = wrapper.findAll('button').find((b) => b.text().trim().startsWith('FurnaceType'))
+    expect(furnace, 'FurnaceType tree node should exist').toBeTruthy()
+    await furnace!.trigger('click')
+    await flushPromises()
+    expect(wrapper.find('[data-member="DoorClosed"]').exists()).toBe(true)
+    expect(wrapper.text()).not.toContain('Model overview')
+
+    // Click the brand: selection clears, center returns to the overview.
+    const brand = wrapper.find('[data-testid="brand-home"]')
+    expect(brand.exists()).toBe(true)
+    await brand.trigger('click')
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('Model overview')
+    expect(wrapper.find('[data-member="DoorClosed"]').exists()).toBe(false)
+  })
+
+  it('inspector renders YAML only — the diagram moved to the center overview', async () => {
     const { wrapper } = await mountShell()
     await flushPromises()
-    // After loading, either the content pane or the empty state is shown —
-    // the critical assertion is that the old static stubs are gone.
-    const hasDiagram =
-      wrapper.find('[data-pane="diagram"]').exists() ||
-      wrapper.find('[data-pane="diagram-raw"]').exists() ||
-      wrapper.find('[data-pane="diagram-empty"]').exists()
+
+    // YAML section is present (empty-state variant is fine — nothing selected yet).
     const hasYaml =
       wrapper.find('[data-pane="yaml"]').exists() ||
       wrapper.find('[data-pane="yaml-empty"]').exists()
-    expect(hasDiagram).toBe(true)
     expect(hasYaml).toBe(true)
+
+    // Select a type: the center switches to its detail, so the overview diagram
+    // unmounts and — since the inspector no longer hosts one — NO diagram pane
+    // exists anywhere. This proves the diagram was removed from the inspector.
+    const furnace = wrapper.findAll('button').find((b) => b.text().trim().startsWith('FurnaceType'))
+    expect(furnace, 'FurnaceType tree node should exist').toBeTruthy()
+    await furnace!.trigger('click')
+    await flushPromises()
+
+    expect(wrapper.find('[data-pane="diagram"]').exists()).toBe(false)
+    expect(wrapper.find('[data-pane="diagram-raw"]').exists()).toBe(false)
+    expect(wrapper.find('[data-pane="diagram-empty"]').exists()).toBe(false)
+
+    // Old static stubs must remain absent.
     expect(wrapper.find('[data-pane="diagram-stub"]').exists()).toBe(false)
     expect(wrapper.find('[data-pane="yaml-stub"]').exists()).toBe(false)
   })

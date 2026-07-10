@@ -1,19 +1,11 @@
 <script setup lang="ts">
-// Right inspector: two stacked sections with clear headers — Diagram and YAML.
-// Both are stubs in T4 (see DiagramPane / YamlPane); this container owns the
-// section chrome and headers so the swap-in components stay focused.
+// Right inspector: the YAML of the current selection. The model diagram now
+// lives in the center pane's overview (see ModelOverview / EditorPane), so this
+// pane holds a single YAML section.
 </script>
 
 <template>
-  <div class="flex flex-col gap-6 p-4">
-    <section class="flex flex-col gap-2.5">
-      <div class="flex items-center gap-2">
-        <UIcon name="i-lucide-waypoints" class="size-4 text-muted" />
-        <h3 class="text-xs font-semibold uppercase tracking-wide text-muted">Diagram</h3>
-      </div>
-      <DiagramPane />
-    </section>
-
+  <div class="flex flex-col p-4">
     <section class="flex flex-col gap-2.5">
       <div class="flex items-center gap-2">
         <UIcon name="i-lucide-file-code-2" class="size-4 text-muted" />
